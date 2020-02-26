@@ -9,7 +9,11 @@ import string
 from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
+
 import gensim
+
+import fasttext.util
+import fasttext
 
 
 
@@ -26,6 +30,13 @@ def main():
     if args.entities == "word2vec":
         model = gensim.models.KeyedVectors.load_word2vec_format('models/GoogleNews-vectors-negative300.bin', binary=True)
         intersection, words_index_intersect = find_intersect(model.vocab, train_word_to_file, model)
+
+    if args.entities == "fasttext":
+        ft = fasttext.load_model('models/wiki.en.bin')
+        intersection, words_index_intersect = create_entities_ft(ft, train_word_to_file)
+        print(intersection.shape)
+
+
 
     elif args.entities == "KG":
         data, word_index = read_entity_file(args.entities, args.id2name)
@@ -115,7 +126,7 @@ def create_id_dict(id2name):
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(__doc__)
-    parser.add_argument("--entities", type=str, required=True, choices=["word2vec", "fastext", "KG"])
+    parser.add_argument("--entities", type=str, required=True, choices=["word2vec", "fasttext", "KG"])
     parser.add_argument("--clustering_algo", type=str, required=True, choices=["KMeans", "GMM"])
     parser.add_argument( "--entities_file", type=str, help="entity file")
     parser.add_argument('--id2name', type=Path, help="id2name file")
@@ -171,6 +182,17 @@ def find_intersect(word_index, vocab, data):
         words.append(word)
     vocab_embeddings = np.array(vocab_embeddings)
     return vocab_embeddings, words
+
+
+def create_entities_ft(model, train_word_to_file):
+    vocab_embeddings = []
+    words = []
+    for word in train_word_to_file:
+        vocab_embeddings.append(model.get_word_vector(word))
+        words.append(word)
+    vocab_embeddings = np.array(vocab_embeddings)
+    return vocab_embeddings, words
+
 
 
 def KMeans_model(vocab_embeddings, rand):
@@ -246,6 +268,7 @@ def create_vocab_and_files(stopwords, type):
             word_to_file.pop(word, None)
 
     print("Vocab: " + str(len(word_to_file)))
+
     return word_to_file, len(files)
 
 
