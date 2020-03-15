@@ -41,12 +41,12 @@ def main():
 
 
     elif args.entities == "KG":
-        data, word_index = read_entity_file(args.entities, args.id2name)
+        data, word_index = read_entity_file(args.entities_file, args.id2name)
         intersection, words_index_intersect = find_intersect(word_index, train_word_to_file, data)
 
     #name = args.entities.split("-")[1]
     #type = args.entities.split("-")[2].split("-")[0]
-
+    sys.exit()
     if args.use_dims:
         #intersection_red = PCA_dim_reduction(intersection, 2)
         #intersection_red = intersection_red.T
@@ -57,8 +57,8 @@ def main():
     npmis = []
     labels = None
     top_k = None
-    
-    
+
+
     for rand in range(NSEEDS):
         if args.clustering_algo == "KMeans":
             labels, top_k  = KMeans_model(intersection, rand)
@@ -79,7 +79,7 @@ def main():
         npmi_score = np.around(get_npmi2(top_k_words, test_word_to_file, test_files_num), 5)
         npmis.append(npmi_score)
 
-        with open(f'{args.entities}_npmi.txt', 'a') as f:
+        with open(f'{args.entities_file}_npmi.txt', 'a') as f:
             f.write(f'{rand}\t{args.clustering_algo}\t{args.use_dims}\t{npmi_score}\n')
 
     print("NPMI mean:" + str(np.around(np.mean(npmis), 5)))
@@ -187,13 +187,15 @@ def find_intersect(word_index, vocab, data):
     vocab_embeddings = []
 
     intersection = set(word_index.keys()) & set(vocab.keys())
+    dif = set(vocab.keys()).difference(set(word_index.keys())) 
+    print(dif)
     print("Intersection: " + str(len(intersection)))
 
     intersection = np.sort(np.array(list(intersection)))
 
 
     for word in intersection:
-        vocab_embeddings.append(data[word])
+        vocab_embeddings.append(data[word_index[word]])
         words.append(word)
     vocab_embeddings = np.array(vocab_embeddings)
     return vocab_embeddings, words
@@ -250,22 +252,11 @@ def GMM_model(vocab_embeddings, rand):
     indices2 = []
 
     for i in range(GMM.n_components):
-        #logp_vocab = GMM.score_samples(vocab_embeddings)
-        #topk_vals = logp_vocab.argsort()[-10:][::-1]
-
-
         density = scipy.stats.multivariate_normal(cov=GMM.covariances_[i], mean=GMM.means_[i]).logpdf(vocab_embeddings)
         topk_vals2 = density.argsort()[-10:][::-1]
 
-        #indices.append(list(topk_vals))
         indices2.append(list(topk_vals2))
 
-        #ind = []
-        #for i in topk_vals:
-        #    ind.append(i)
-
-        #indices.append(ind)
-    
     return GMM.predict(vocab_embeddings), indices2
     #return GMM.fit_predict(vocab_embeddings), indices
 
@@ -285,13 +276,10 @@ def create_vocab_and_files(stopwords, type):
     for file_num in range(0, len(files)):
         words = files[file_num].lower().split()
         for word in words:
-            #word = word.translate(str.maketrans('', '', string.punctuation))
-            #word = word.translate(str.maketrans('', '', string.digits))
             word = word.translate(strip_punct)
             word = word.translate(strip_digit)
             if word in stopwords:
                 continue
-            #word = "/" + word
             if word in word_to_file:
                 word_to_file[word].add(file_num)
             else:
@@ -309,9 +297,9 @@ def create_vocab_and_files(stopwords, type):
 
 def npmi_wpair(word1, word2, word_in_file, window_total):
 
-    eps = 10**(-12) 
+    eps = 10**(-12)
     #eps2 = eps * window_total **2
-    
+
     w1_count = 0
     w2_count = 0
     combined_count = 0
@@ -324,12 +312,6 @@ def npmi_wpair(word1, word2, word_in_file, window_total):
     result = np.log(((float(combined_count)*float(window_total)) + eps)/ \
                 (float(w1_count*w2_count)+eps))
     result = result / (-1.0*np.log(float(combined_count)/(window_total) + eps))
-    #prob_j = w1_count/ window_total
-    #prob_k = w2_count/ window_total
-    #prob_j_k = combined_count / window_total + eps
-    #result = result / (-1.0*np.log(prob_j_k))
-
-    #result = (np.log(prob_j_k/(prob_j * prob_k + eps)))/ (-1*np.log(prob_j_k))
 
 
     return result
@@ -362,8 +344,8 @@ def get_npmi2(top_k_bins, word_in_file, files_num):
 def get_npmi(top_k_bins, vocab, files_num):
     e = 10**(-12)
     npmi = np.zeros(20)
-    
-    
+
+
     for i in range(20):
         word_pair_counts = 0
         for j in range(len(top_k_bins[i])):
@@ -384,7 +366,7 @@ def get_npmi(top_k_bins, vocab, files_num):
 
                 npmi_j_k = (np.log(prob_j_k/(prob_j * prob_k + e)))/ (-1*np.log(prob_j_k))
                 npmi[i] = npmi[i] + npmi_j_k
-            
+
             npmi[i] = npmi[i]/word_pair_counts
         print(np.around(npmi[i], 5), top_k_bins[i])
 
