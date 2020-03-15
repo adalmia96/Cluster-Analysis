@@ -2,3 +2,4 @@ models/*
 data/*
 *.swp
 embeds/
+logs/*

@@ -11,10 +11,11 @@ from sklearn.datasets import fetch_20newsgroups
 import nltk.data
 import string
 # argparser
-#import argparse
+import argparse
 #from distutils.util import str2bool
-#argparser = argparser.ArgumentParser()
-#argparser.add_argument('--x', type=float, default=0)
+argparser = argparse.ArgumentParser()
+argparser.add_argument('--layer', type=int)
+args = argparser.parse_args()
 
 # Custom imports
 import time
@@ -71,6 +72,7 @@ def init():
             if i%(int(len(files)/100))==0:
                 timetaken = np.round(time.time() - start, 1)
                 print(f"{i}/{len(files)} done, elapsed(s): {timetaken}")
+                sys.stdout.flush()
 
             sents = sent_detector.tokenize(fil)
             for sent in sents:
@@ -79,9 +81,21 @@ def init():
                     continue
 
                 input_ids = torch.tensor([tokenizer.encode(sent)])
-                embeds = model(input_ids)[0][0]
+                embeds = model(input_ids)[-2:][1][args.layer][0]
+
+                compound_word = []
 
                 for w, word in enumerate(words):
+                    if word.startswith("##"):
+                        compound_word.append(word.strip('##'))
+
+                    else:
+                        if len(compound_word)==0:
+                            pass
+                        else:
+                            word = "".join(compound_word)
+                            compound_word = []
+
                     if word not in valid_vocab:
                         continue
                     
@@ -108,10 +122,10 @@ def eb_dump(i, w2vb, w2vc):
         else:
             all_vecs = np.vstack((all_vecs, vect))
 
-    np.savetxt(f'embeds/bert_embeddings{i}.txt', all_vecs, fmt = '%s', delimiter=" ")
+    np.savetxt(f'embeds/bert_embeddings{i}-layer{args.layer}.txt', all_vecs, fmt = '%s', delimiter=" ")
     print(len(all_vecs))
+    sys.stdout.flush()
     
-
 
 
 def load_bert_models():
@@ -119,7 +133,7 @@ def load_bert_models():
     tokenizer_class = BertTokenizer
     pretrained_weights = 'bert-base-uncased'
     tokenizer = tokenizer_class.from_pretrained(pretrained_weights)
-    model = model_class.from_pretrained(pretrained_weights)
+    model = model_class.from_pretrained(pretrained_weights, output_hidden_states=True)
 
     return model, tokenizer
 

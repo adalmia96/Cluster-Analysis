@@ -17,7 +17,7 @@ import gensim
 import fasttext.util
 import fasttext
 
-NSEEDS = 1
+NSEEDS = 5
 
 def main():
     args = parse_args()
@@ -47,20 +47,17 @@ def main():
     #name = args.entities.split("-")[1]
     #type = args.entities.split("-")[2].split("-")[0]
 
-
-
-
-
-    intersection_red = PCA_dim_reduction(intersection, 2)
-    intersection_red = intersection_red.T
-
-    #intersection = PCA_dim_reduction(intersection, 400)
+    if args.use_dims:
+        #intersection_red = PCA_dim_reduction(intersection, 2)
+        #intersection_red = intersection_red.T
+        intersection = PCA_dim_reduction(intersection, args.use_dims)
 
     test_word_to_file, test_files_num = create_vocab_and_files(stopwords, "test")
 
     npmis = []
     labels = None
     top_k = None
+    
     
     for rand in range(NSEEDS):
         if args.clustering_algo == "KMeans":
@@ -79,9 +76,13 @@ def main():
             top_k_words = [tw.strip().replace(',', '').split() for tw in top_k_words]
 
         # don't overload function name.
-        print(top_k_words)
-        npmis.append(get_npmi2(top_k_words, test_word_to_file, test_files_num))
-    print("NPMI mean:" + str(np.mean(npmis)))
+        npmi_score = np.around(get_npmi2(top_k_words, test_word_to_file, test_files_num), 5)
+        npmis.append(npmi_score)
+
+        with open(f'{args.entities}_npmi.txt', 'a') as f:
+            f.write(f'{rand}\t{args.clustering_algo}\t{args.use_dims}\t{npmi_score}\n')
+
+    print("NPMI mean:" + str(np.around(np.mean(npmis), 5)))
 
     #print_bins(bins, "word2vec", "")
     #print_top_k(top_k_words,"word2vec", "")
@@ -142,6 +143,8 @@ def parse_args() -> argparse.Namespace:
         'from_file'])
     parser.add_argument( "--entities_file", type=str, help="entity file")
     parser.add_argument('--id2name', type=Path, help="id2name file")
+    parser.add_argument('--use_dims', type=int, default=300)
+
     args = parser.parse_args()
     return args
 
@@ -305,7 +308,9 @@ def create_vocab_and_files(stopwords, type):
 
 
 def npmi_wpair(word1, word2, word_in_file, window_total):
-    eps = 10**(-12)
+
+    eps = 10**(-12) 
+    #eps2 = eps * window_total **2
     
     w1_count = 0
     w2_count = 0
@@ -316,16 +321,16 @@ def npmi_wpair(word1, word2, word_in_file, window_total):
         w1_count = len(word_in_file.get(word1, []))
         w2_count = len(word_in_file.get(word2, []))
 
-    #if combined_count == 0:
-    #    if w1_count == 0 or w2_count == 0:
-    #        result = 0
-    #    else:
-    #        result = -1
-
-    #else:
     result = np.log(((float(combined_count)*float(window_total)) + eps)/ \
                 (float(w1_count*w2_count)+eps))
     result = result / (-1.0*np.log(float(combined_count)/(window_total) + eps))
+    #prob_j = w1_count/ window_total
+    #prob_k = w2_count/ window_total
+    #prob_j_k = combined_count / window_total + eps
+    #result = result / (-1.0*np.log(prob_j_k))
+
+    #result = (np.log(prob_j_k/(prob_j * prob_k + eps)))/ (-1*np.log(prob_j_k))
+
 
     return result
 
