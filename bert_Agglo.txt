@@ -1,7 +1,0 @@
-> /Users/ayushdalmia/Documents/Research/Cluster-Analysis/score.py(447)calc_topic_coherence()
--> return float(sum(topic_assoc))/len(topic_assoc)
-(Pdb) --KeyboardInterrupt--
-(Pdb) --KeyboardInterrupt--
-(Pdb) --KeyboardInterrupt--
-(Pdb) --KeyboardInterrupt--
-(Pdb) (Pdb) (Pdb) 
