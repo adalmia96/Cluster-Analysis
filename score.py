@@ -1,8 +1,8 @@
-from sklearn.datasets import fetch_20newsgroups
-from sklearn.cluster import KMeans
-from sklearn.mixture import GaussianMixture
+from clustering import *
+from preprocess import *
+from embedding import
+
 from sklearn.metrics import pairwise_distances_argmin_min
-import scipy.stats
 import sys
 import argparse
 import string
@@ -12,95 +12,69 @@ import numpy as np
 import pdb
 import math
 
-import gensim
 
-import fasttext.util
-import fasttext
 
 NSEEDS = 5
 
 def main():
     args = parse_args()
     stopwords = set(line.strip() for line in open('stopwords_en.txt'))
-    train_word_to_file, files_num = create_vocab_and_files(stopwords, "train")
-
-
+    train_word_to_file, files_num = create_vocab_and_files_20news(stopwords, "train")
+    #train_word_to_file, files_num = create_vocab_and_files_children(stopwords, "train")
     intersection = None
     words_index_intersect = None
 
-
     if args.entities == "word2vec":
         model = gensim.models.KeyedVectors.load_word2vec_format('models/GoogleNews-vectors-negative300.bin', binary=True)
-        intersection, words_index_intersect = find_intersect(model.vocab, train_word_to_file, model)
-
+        intersection, words_index_intersect = find_intersect(model.vocab, train_word_to_file, model, args.entities)
     if args.entities == "fasttext":
         ft = fasttext.load_model('models/wiki.en.bin')
         intersection, words_index_intersect = create_entities_ft(ft, train_word_to_file)
         print(intersection.shape)
-
-
-
     elif args.entities == "KG":
         data, word_index = read_entity_file(args.entities_file, args.id2name)
-        intersection, words_index_intersect = find_intersect(word_index, train_word_to_file, data)
+        intersection, words_index_intersect = find_intersect(word_index, train_word_to_file, data, args.entities)
         del train_word_to_file
+
     if args.use_dims:
-
         intersection = PCA_dim_reduction(intersection, args.use_dims)
+        #intersection = TSNE_dim_reduction(intersection, args.use_dims)
 
-
-
-
-
-    intersection_red = PCA_dim_reduction(intersection, 2)
-
-    test_word_to_file, test_files_num = create_vocab_and_files(stopwords, "test")
+    test_word_to_file, test_files_num = create_vocab_and_files_20news(stopwords, "test")
+    #test_word_to_file, test_files_num = create_vocab_and_files_children(stopwords, "test")
 
     npmis = []
     labels = None
     top_k = None
     gmm = None
     n_p = None
-
     for rand in range(NSEEDS):
         if args.clustering_algo == "KMeans":
-            labels, top_k  = KMeans_model(intersection, rand)
-            bins, top_k_words = sort(labels, top_k, words_index_intersect)
-
+            labels, top_k  = KMeans_model(intersection, words_index_intersect, args.topics, rand)
+        elif args.clustering_algo == "KMedoids":
+            labels, top_k  = KMedoids_model(intersection, args.topics, rand)
+        elif args.clustering_algo == "Agglo":
+            labels, top_k  = Agglo_model(intersection, args.topics, rand)
+        elif args.clustering_algo == "DBSCAN":
+            labels, top_k  = DBSCAN_model(intersection, args.topics, rand)
         elif args.clustering_algo == "GMM":
             # top_k are indexes of the vocabulary
-            labels, top_k, gmm  = GMM_model(intersection, rand)
-            bins, top_k_words = sort(labels, top_k, words_index_intersect)
+            labels, top_k, gmm  = GMM_model(intersection, args.topics, rand)
 
-        elif args.clustering_algo == 'from_file':
-
+        if args.clustering_algo == 'from_file':
             with open('bert_topics.txt', 'r') as f:
                 top_k_words = f.readlines()
             top_k_words = [tw.strip().replace(',', '').split() for tw in top_k_words]
-
+        else:
+            bins, top_k_words = sort(labels, top_k, words_index_intersect)
         # don't overload function name.
-        val, n_p = get_npmi2(top_k_words, test_word_to_file, test_files_num)
+        val, n_p = get_npmi(top_k_words, test_word_to_file, test_files_num)
         npmi_score = np.around(val, 5)
-
         npmis.append(npmi_score)
 
         with open(f'{args.entities_file}_npmi.txt', 'a') as f:
             f.write(f'{rand}\t{args.clustering_algo}\t{args.use_dims}\t{npmi_score}\n')
-
-    for i in range(0,len(n_p)):
-        labels = np.where(labels==i, n_p[i], labels)
-
-    plt.scatter(intersection_red[:, 0], intersection_red[:, 1], c=labels, vmin=-0.5, vmax=0.5,  s=5, cmap='RdBu')
-
-    centers = np.empty(shape=(gmm.n_components, intersection_red.shape[1]))
-
-    for i in range(gmm.n_components):
-        density = scipy.stats.multivariate_normal(cov=gmm.covariances_[i], mean=gmm.means_[i]).logpdf(intersection)
-        centers[i, :] = intersection_red[np.argmax(density)]
-
-
-    plt.scatter(centers[:, 0], centers[:, 1], c="black", s=35, alpha=0.7)
-    plt.show(block=True)
+    print("NPMI Mean:" + str(np.mean(npmis)))
 
 
 def sort(labels, indices, word_index):
@@ -114,15 +88,13 @@ def sort(labels, indices, word_index):
             bins[label].append(word_index[index])
         index += 1;
 
-    for i in range(0, 20):
+    for i in range(0, len(np.unique(labels))-1):
         ind = indices[i]
         top_k = []
         for word_ind in ind:
             top_k.append(word_index[word_ind])
         top_k_bins.append(top_k)
     return bins, top_k_bins
-
-
 def print_bins(bins, name, type):
     f = open(name + "_" + type + "_corpus_bins.txt","w+")
     for i in range(0, 20):
@@ -132,7 +104,6 @@ def print_bins(bins, name, type):
         f.write("\n\n")
 
     f.close()
-
 def print_top_k(top_k_bins, name, type):
     f = open(name + "_" + type + "_corpus_top_k.txt","w+")
     for i in range(0, 20):
@@ -143,185 +114,31 @@ def print_top_k(top_k_bins, name, type):
         f.write("\n\n")
     f.close()
 
-def create_id_dict(id2name):
-    data = {}
-    for line in open(id2name):
-        mapping = line.split()
-        data[mapping[0]] = mapping[1]
-    return data
-
-
-
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("--entities", type=str, required=True, choices=["word2vec", "fasttext", "KG"])
-    parser.add_argument("--clustering_algo", type=str, required=True, choices=["KMeans", "GMM",
+    parser.add_argument("--clustering_algo", type=str, required=True, choices=["KMeans", "GMM", "KMedoids","Agglo","DBSCAN",
         'from_file'])
     parser.add_argument( "--entities_file", type=str, help="entity file")
     parser.add_argument('--id2name', type=Path, help="id2name file")
     parser.add_argument('--use_dims', type=int, default=300)
-
+    parser.add_argument('--topics', type=int, default=20)
     args = parser.parse_args()
     return args
 
-
-def read_entity_file(file, id_to_word):
-    data = []
-    word_index = {}
-    index = 0
-    mapping = None
-    if id_to_word != None:
-        mapping = create_id_dict(id_to_word)
-
-    for line in open(file):
-        embedding = line.split()
-        if id_to_word != None:
-            embedding[0] = mapping[embedding[0]][1:]
-        word_index[embedding[0]] = index
-        index +=1
-        embedding = list(map(float, embedding[1:]))
-        data.append(embedding)
-    print("KG: " + str(len(data)))
-    return data, word_index
-
-def PCA_dim_reduction(intersection, dim):
-    sigma = np.cov(intersection.T)
-    eigVals, eigVec = np.linalg.eig(sigma)
-    sorted_index = eigVals.argsort()[::-1]
-
-    eigVals = eigVals[sorted_index]
-    eigVec = eigVec[:,sorted_index]
-
-    eigVec = eigVec[:,:dim]
-    transformed = intersection.dot(eigVec)
-    return transformed
-
-def find_intersect(word_index, vocab, data):
-    words = []
-    vocab_embeddings = []
-
-    intersection = set(word_index.keys()) & set(vocab.keys())
-    print("Intersection: " + str(len(intersection)))
-
-    intersection = np.sort(np.array(list(intersection)))
-
-
-    for word in intersection:
-        vocab_embeddings.append(data[word_index[word]])
-        words.append(word)
-    vocab_embeddings = np.array(vocab_embeddings)
-    return vocab_embeddings, words
-
-
-def create_entities_ft(model, train_word_to_file):
-    print("getting fasttext embeddings..")
-    vocab_embeddings = []
-    words = []
-    for word in train_word_to_file:
-        vocab_embeddings.append(model.get_word_vector(word))
-        words.append(word)
-    vocab_embeddings = np.array(vocab_embeddings)
-    print("complete..")
-    return vocab_embeddings, words
-
-
-
-def KMeans_model(vocab_embeddings, rand):
-    kmeans = KMeans(n_clusters=20, random_state=rand).fit(vocab_embeddings)
-    m_clusters = kmeans.labels_.tolist()
-    centers = np.array(kmeans.cluster_centers_)
-
-
-    indices = []
-
-    for i in range(20):
-        center_vec = centers[i]
-        data_idx_within_i_cluster = [ idx for idx, clu_num in enumerate(m_clusters) if clu_num == i ]
-
-        one_cluster_tf_matrix = np.zeros((len(data_idx_within_i_cluster) , centers.shape[1]))
-
-        for row_num, data_idx in enumerate(data_idx_within_i_cluster):
-            one_row = vocab_embeddings[data_idx]
-            one_cluster_tf_matrix[row_num] = one_row
-
-
-        dist_X =  np.sum((one_cluster_tf_matrix - center_vec)**2, axis = 1)
-        topk = min(10, len(data_idx_within_i_cluster))
-        topk_vals = dist_X.argsort()[-topk:][::-1].astype(int)
-        ind = []
-        for i in topk_vals:
-            ind.append(data_idx_within_i_cluster[i])
-
-        indices.append(ind)
-
-    return kmeans.labels_, indices
-
-
-
-def GMM_model(vocab_embeddings, rand):
-    GMM = GaussianMixture(n_components=20, random_state=rand).fit(vocab_embeddings)
-    indices = []
-
-    for i in range(GMM.n_components):
-        density = scipy.stats.multivariate_normal(cov=GMM.covariances_[i], mean=GMM.means_[i]).logpdf(vocab_embeddings)
-        topk_vals = density.argsort()[-10:][::-1]
-        indices.append(list(topk_vals))
-
-    return GMM.predict(vocab_embeddings), indices, GMM
-
-
-def create_vocab_and_files(stopwords, type):
-
-    word_to_file = {}
-    train_data = fetch_20newsgroups(data_home='./data/', subset=type, remove=('headers', 'footers', 'quotes'))
-    files = train_data['data'];
-
-    print(f"Length of {type} files:", len(files))
-    strip_punct = str.maketrans("", "", string.punctuation)
-    strip_digit = str.maketrans("", "", string.digits)
-
-    for file_num in range(0, len(files)):
-        words = files[file_num].lower().split()
-        for word in words:
-            word = word.translate(strip_punct)
-            word = word.translate(strip_digit)
-            if word in stopwords:
-                continue
-            if word in word_to_file:
-                word_to_file[word].add(file_num)
-            else:
-                word_to_file[word]= set()
-                word_to_file[word].add(file_num)
-
-    for word in list(word_to_file):
-        if len(word_to_file[word]) < 5:
-            word_to_file.pop(word, None)
-
-    print("Vocab: " + str(len(word_to_file)))
-
-    return word_to_file, len(files)
-
-
 def npmi_wpair(word1, word2, word_in_file, window_total):
-
     eps = 10**(-12)
-
     w1_count = 0
     w2_count = 0
     combined_count = 0
-
     if word1 in word_in_file and word2 in word_in_file:
         combined_count = len(set(word_in_file[word1]) & set(word_in_file[word2]))
         w1_count = len(word_in_file.get(word1, []))
         w2_count = len(word_in_file.get(word2, []))
-
     result = np.log(((float(combined_count)*float(window_total)) + eps)/ \
                 (float(w1_count*w2_count)+eps))
     result = result / (-1.0*np.log(float(combined_count)/(window_total) + eps))
-
-
     return result
-
 def calc_topic_coherence(topic_words, word_in_file, files_num):
     topic_assoc = []
     for i in range(0, len(topic_words)-1):
@@ -333,51 +150,14 @@ def calc_topic_coherence(topic_words, word_in_file, files_num):
     if len(topic_assoc)==0:
         pdb.set_trace()
     return float(sum(topic_assoc))/len(topic_assoc)
-
-def get_npmi2(top_k_bins, word_in_file, files_num):
-    ntopics = 20
+def get_npmi(top_k_bins, word_in_file, files_num):
+    ntopics = len(top_k_bins)
     npmi_scores = np.zeros(ntopics)
-
     for k in range(ntopics):
         npmi_score = calc_topic_coherence(top_k_bins[k], word_in_file, files_num)
         print(np.around(npmi_score, 5), " ".join(top_k_bins[k]))
         npmi_scores[k] = np.around(npmi_score, 5)
-
     return np.mean(npmi_scores), npmi_scores
-
-
-
-def get_npmi(top_k_bins, vocab, files_num):
-    e = 10**(-12)
-    npmi = np.zeros(20)
-
-
-    for i in range(20):
-        word_pair_counts = 0
-        for j in range(len(top_k_bins[i])):
-            if(len(top_k_bins[i]) != 10):
-                print("error")
-            for k in range(j + 1, len(top_k_bins[i])):
-                word_j = top_k_bins[i][j]
-                word_k = top_k_bins[i][k]
-
-                word_pair_counts +=1
-
-                # these are the number of documents that both words appear in
-                intersect = list(set(vocab.get(word_j, [])) & set(vocab.get(word_k, [])))
-
-                prob_j = len(vocab.get(word_j, []))/files_num
-                prob_k = len(vocab.get(word_k, []))/files_num
-                prob_j_k = (len(intersect)/ files_num) + e
-
-                npmi_j_k = (np.log(prob_j_k/(prob_j * prob_k + e)))/ (-1*np.log(prob_j_k))
-                npmi[i] = npmi[i] + npmi_j_k
-
-            npmi[i] = npmi[i]/word_pair_counts
-        print(np.around(npmi[i], 5), top_k_bins[i])
-
-    print(np.mean(npmi))
-    return(np.mean(npmi))
 
 
 if __name__ == "__main__":
