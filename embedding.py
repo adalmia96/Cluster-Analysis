@@ -1,6 +1,8 @@
 import gensim
 import fasttext.util
 import fasttext
+import numpy as np
+from sklearn.decomposition import TruncatedSVD
 
 def create_id_dict(id2name):
     data = {}
@@ -25,8 +27,18 @@ def read_entity_file(file, id_to_word):
         index +=1
         embedding = list(map(float, embedding[1:]))
         data.append(embedding)
+
     print("KG: " + str(len(data)))
     return data, word_index
+
+def create_doc_to_word_emb(word_to_doc, file_num, word_list, dim):
+    word_to_doc_matrix = np.zeros((len(word_list), file_num))
+    for i, word in enumerate(word_list):
+        for doc in word_to_doc[word]:
+            word_to_doc_matrix[i][doc] += 1
+
+    trun_ftw = TruncatedSVD(n_components=dim).fit_transform(word_to_doc_matrix)
+    return trun_ftw
 
 def find_intersect(word_index, vocab, data, type):
     words = []
@@ -42,6 +54,28 @@ def find_intersect(word_index, vocab, data, type):
         else:
             vocab_embeddings.append(data[word_index[word]])
         words.append(word)
+
+    vocab_embeddings = np.array(vocab_embeddings)
+
+    return vocab_embeddings, words
+
+
+def find_intersect_mult(word_index, vocab, data, type):
+    words = []
+    vocab_embeddings = []
+
+    intersection = set(word_index.keys()) & set(vocab.keys())
+    print("Intersection: " + str(len(intersection)))
+
+    intersection = np.sort(np.array(list(intersection)))
+    for word in intersection:
+        for i in range(len(vocab[word])):
+            if type == "word2vec":
+                vocab_embeddings.append(data[word])
+            else:
+                vocab_embeddings.append(data[word_index[word]])
+            words.append(word)
+    print(len(words))
     vocab_embeddings = np.array(vocab_embeddings)
     return vocab_embeddings, words
 

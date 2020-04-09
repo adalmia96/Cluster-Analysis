@@ -1,8 +1,9 @@
 from clustering import *
 from preprocess import *
-from embedding import
+from embedding import *
 
 from sklearn.metrics import pairwise_distances_argmin_min
+from sklearn import preprocessing
 import sys
 import argparse
 import string
@@ -19,61 +20,87 @@ NSEEDS = 5
 def main():
     args = parse_args()
     stopwords = set(line.strip() for line in open('stopwords_en.txt'))
-    train_word_to_file, files_num = create_vocab_and_files_20news(stopwords, "train")
+    train_word_to_file, train_word_to_file_mult , files_num = create_vocab_and_files_20news(stopwords, "train")
     #train_word_to_file, files_num = create_vocab_and_files_children(stopwords, "train")
     intersection = None
     words_index_intersect = None
 
     if args.entities == "word2vec":
         model = gensim.models.KeyedVectors.load_word2vec_format('models/GoogleNews-vectors-negative300.bin', binary=True)
-        intersection, words_index_intersect = find_intersect(model.vocab, train_word_to_file, model, args.entities)
+        intersection_unique, words_index_intersect_unique  = find_intersect(model.vocab, train_word_to_file, model, args.entities)
+        intersection, words_index_intersect = find_intersect_mult(model.vocab, train_word_to_file, model, args.entities)
     if args.entities == "fasttext":
         ft = fasttext.load_model('models/wiki.en.bin')
         intersection, words_index_intersect = create_entities_ft(ft, train_word_to_file)
         print(intersection.shape)
     elif args.entities == "KG":
         data, word_index = read_entity_file(args.entities_file, args.id2name)
-        intersection, words_index_intersect = find_intersect(word_index, train_word_to_file, data, args.entities)
-        del train_word_to_file
+        intersection_unique, words_index_intersect_unique = find_intersect(word_index, train_word_to_file, data, args.entities)
+
+        #u = create_doc_to_word_emb(train_word_to_file_mult, files_num, words_index_intersect_unique, 50)
+        #u = preprocessing.scale(u)
+
+        #intersection_unique = np.concatenate((intersection_unique, u), axis=1)
+
+        #intersection_unique = preprocessing.scale(intersection_unique)
+        #print(intersection_unique.shape)
+        intersection, words_index_intersect = find_intersect_mult(word_index, train_word_to_file_mult, data, args.entities)
 
     if args.use_dims:
+        intersection_unique = PCA_dim_reduction(intersection_unique, args.use_dims)
         intersection = PCA_dim_reduction(intersection, args.use_dims)
+    print(intersection.shape)
         #intersection = TSNE_dim_reduction(intersection, args.use_dims)
 
-    test_word_to_file, test_files_num = create_vocab_and_files_20news(stopwords, "test")
-    #test_word_to_file, test_files_num = create_vocab_and_files_children(stopwords, "test")
+    test_word_to_file, test_word_to_file_mult, test_files_num = create_vocab_and_files_20news(stopwords, "test")
+    #test_word_to_file, test_word_to_file_mult, test_files_num = create_vocab_and_files_children(stopwords, "test")
 
     npmis = []
     labels = None
     top_k = None
     gmm = None
     n_p = None
+    pmi_mat = None
+    #pmi_mat = calc_pmi_matrix(words_index_intersect, train_word_to_file, files_num)
+    eps = np.arange(4.73, 4.75, 0.005)
     for rand in range(NSEEDS):
+        #print("Eps:" + str(rand))
         if args.clustering_algo == "KMeans":
-            labels, top_k  = KMeans_model(intersection, words_index_intersect, args.topics, rand)
+            labels, top_k  = KMeans_model(intersection_unique, words_index_intersect_unique, args.topics, rand)
+        elif args.clustering_algo == "SPKMeans":
+            labels, top_k  = SphericalKMeans_model(intersection_unique, args.topics, rand)
+        elif args.clustering_algo == "Spectral":
+            labels, top_k  = SpectralClustering_Model(intersection_unique, args.topics, rand,  pmi_mat)
         elif args.clustering_algo == "KMedoids":
-            labels, top_k  = KMedoids_model(intersection, args.topics, rand)
+            labels, top_k  = KMedoids_model(intersection,  words_index_intersect, args.topics, rand)
         elif args.clustering_algo == "Agglo":
             labels, top_k  = Agglo_model(intersection, args.topics, rand)
         elif args.clustering_algo == "DBSCAN":
-            labels, top_k  = DBSCAN_model(intersection, args.topics, rand)
+            print(k)
+            labels, top_k  = DBSCAN_model(intersection_unique,  k)
         elif args.clustering_algo == "GMM":
             # top_k are indexes of the vocabulary
-            labels, top_k, gmm  = GMM_model(intersection, args.topics, rand)
+            labels, top_k, gmm  = GMM_model(intersection, words_index_intersect, args.topics, rand)
+        elif args.clustering_algo == "VMFM":
+            # top_k are indexes of the vocabulary
+            labels, top_k = VonMisesFisherMixture_Model(intersection, args.topics, rand)
 
         if args.clustering_algo == 'from_file':
             with open('bert_topics.txt', 'r') as f:
                 top_k_words = f.readlines()
             top_k_words = [tw.strip().replace(',', '').split() for tw in top_k_words]
         else:
-            bins, top_k_words = sort(labels, top_k, words_index_intersect)
-        # don't overload function name.
+            bins, top_k_words = sort(labels, top_k,  words_index_intersect)
+                #print(top_k_words)
+            # don't overload function name.
         val, n_p = get_npmi(top_k_words, test_word_to_file, test_files_num)
         npmi_score = np.around(val, 5)
+        print("NPMI:" + str(npmi_score))
         npmis.append(npmi_score)
-
-        with open(f'{args.entities_file}_npmi.txt', 'a') as f:
-            f.write(f'{rand}\t{args.clustering_algo}\t{args.use_dims}\t{npmi_score}\n')
+            #break;
+            #break;
+            #with open(f'{args.entities_file}_npmi.txt', 'a') as f:
+            #    f.write(f'{rand}\t{args.clustering_algo}\t{args.use_dims}\t{npmi_score}\n')
     print("NPMI Mean:" + str(np.mean(npmis)))
 
 
@@ -87,8 +114,7 @@ def sort(labels, indices, word_index):
         else:
             bins[label].append(word_index[index])
         index += 1;
-
-    for i in range(0, len(np.unique(labels))-1):
+    for i in range(0, len(indices)):
         ind = indices[i]
         top_k = []
         for word_ind in ind:
@@ -117,7 +143,7 @@ def print_top_k(top_k_bins, name, type):
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("--entities", type=str, required=True, choices=["word2vec", "fasttext", "KG"])
-    parser.add_argument("--clustering_algo", type=str, required=True, choices=["KMeans", "GMM", "KMedoids","Agglo","DBSCAN",
+    parser.add_argument("--clustering_algo", type=str, required=True, choices=["KMeans", "SPKMeans", "GMM", "KMedoids","Agglo","DBSCAN","Spectral","VMFM",
         'from_file'])
     parser.add_argument( "--entities_file", type=str, help="entity file")
     parser.add_argument('--id2name', type=Path, help="id2name file")
@@ -125,6 +151,30 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--topics', type=int, default=20)
     args = parser.parse_args()
     return args
+
+def calc_pmi_matrix(word_intersect, word_in_file, window_total):
+    pmi = np.zeros((len(word_intersect), len(word_intersect)))
+    for i in range(len(word_intersect)):
+        for j in range(i, len(word_intersect)):
+            pmi[i, j] = pmi_wpair(word_intersect[i], word_intersect[j], word_in_file, window_total)
+            pmi[j, i] = pmi[i, j]
+    print(pmi)
+    return pmi
+
+
+def pmi_wpair(word1, word2, word_in_file, window_total):
+    eps = 10**(-12)
+    w1_count = 0
+    w2_count = 0
+    combined_count = 0
+    if word1 in word_in_file and word2 in word_in_file:
+        combined_count = len(set(word_in_file[word1]) & set(word_in_file[word2]))
+        w1_count = len(word_in_file.get(word1, []))
+        w2_count = len(word_in_file.get(word2, []))
+    result = np.log(((float(combined_count)*float(window_total)) + eps)/ \
+                (float(w1_count*w2_count)+eps))
+    return result
+
 
 def npmi_wpair(word1, word2, word_in_file, window_total):
     eps = 10**(-12)
@@ -145,6 +195,7 @@ def calc_topic_coherence(topic_words, word_in_file, files_num):
         w1 = topic_words[i]
         for j in range(i+1, len(topic_words)):
             w2 = topic_words[j]
+            #print(w1 + " " + w2 + str(npmi_wpair(w1, w2, word_in_file, files_num)))
     #        if w1 != w2:
             topic_assoc.append(npmi_wpair(w1, w2, word_in_file, files_num))
     if len(topic_assoc)==0:

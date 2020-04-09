@@ -98,7 +98,7 @@ def init():
 
                     if word not in valid_vocab:
                         continue
-                    
+
                     if word in w2vb:
                         w2vb[word] += embeds[w]
                         w2vc[word] += 1
@@ -125,7 +125,7 @@ def eb_dump(i, w2vb, w2vc):
     np.savetxt(f'embeds/bert_embeddings{i}-layer{args.layer}.txt', all_vecs, fmt = '%s', delimiter=" ")
     print(len(all_vecs))
     sys.stdout.flush()
-    
+
 
 
 def load_bert_models():
@@ -142,4 +142,3 @@ def load_bert_models():
 
 if __name__ == "__main__":
     init()
-

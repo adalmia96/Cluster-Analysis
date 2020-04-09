@@ -1,0 +1,5 @@
+0	Spectral	300	-0.16812
+0	Spectral	300	-0.05926
+0	Spectral	100	-0.11123
+0	KMeans	300	-0.05352
+1	KMeans	300	-0.10926
