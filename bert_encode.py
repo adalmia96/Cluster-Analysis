@@ -19,8 +19,8 @@ args = argparser.parse_args()
 
 # Custom imports
 import time
-import torch
-from pytorch_transformers import *
+#import torch
+#from pytorch_transformers import *
 
 def init():
 
@@ -84,37 +84,54 @@ def init():
                 embeds = model(input_ids)[-2:][1][args.layer][0]
 
                 compound_word = []
+                compound_ixs = []
+                full_word = ""
 
                 for w, word in enumerate(words):
-                    if word.startswith("##"):
-                        compound_word.append(word.strip('##'))
+                    if word.startswith('##'):
+                        compound_word.append(word.replace('##',''))
+                        compound_ixs.append(w)
 
                     else:
-                        if len(compound_word)==0:
+                        # add the previous word
+                        # reset the compound word
+                        if w==0:
                             pass
                         else:
-                            word = "".join(compound_word)
-                            compound_word = []
+                            full_word = "".join(compound_word)
+                            ix = compound_ixs[0]
+                            if word in valid_vocab:
+                                w2vb, w2vc = add_word(w2vb, w2vc, full_word, ix, embeds)
 
-                    if word not in valid_vocab:
-                        continue
-                    
-                    if word in w2vb:
-                        w2vb[word] += embeds[w]
-                        w2vc[word] += 1
-                    else:
-                        w2vb[word] = embeds[w]
-                        w2vc[word] = 1
+                        compound_word = [word]
+                        compound_ixs = [w]
+
+                    if w == len(words)-1:
+                        full_word = "".join(compound_word)
+                        ix = compound_ixs[0]
+                        if word in valid_vocab:
+                            w2vb, w2vc = add_word(w2vb, w2vc, full_word, ix, embeds)
 
         eb_dump(i, w2vb, w2vc)
         w2vb = {}
         w2vc = {}
 
+def add_word(w2vb, w2vc, word, w, embeds):
+
+    if word in w2vb:
+        w2vb[word] += embeds[w]
+        w2vc[word] += 1
+    else:
+        w2vb[word] = embeds[w]
+        w2vc[word] = 1
+
+    return w2vb, w2vc
+
+
 def eb_dump(i, w2vb, w2vc):
     all_vecs = []
     for word in w2vb:
         mean_vector = np.around(w2vb[word].detach().numpy()/w2vc[word], 5)
-        #mean_vector = torch.mean(torch.stack(w2vb[word]), 0).detach().numpy()
         vect = np.append(word, mean_vector)
 
         if len(all_vecs)==0:
@@ -126,8 +143,6 @@ def eb_dump(i, w2vb, w2vc):
     print(len(all_vecs))
     sys.stdout.flush()
     
-
-
 def load_bert_models():
     model_class = BertModel
     tokenizer_class = BertTokenizer
@@ -136,6 +151,31 @@ def load_bert_models():
     model = model_class.from_pretrained(pretrained_weights, output_hidden_states=True)
 
     return model, tokenizer
+
+def sanity_check(fn):
+    with open(fn, 'r') as f:
+        data = f.readlines()
+
+    data = [d.split() for d in data]
+    words = [d[0] for d in data]
+
+    embeds = [np.asarray(d[1:], dtype="float") for d in data]
+
+    for i, v in enumerate(embeds):
+
+        maxv = max(v)
+        minv = min(v)
+        rangev = maxv - minv
+
+        argmaxv = np.argmax(v)
+        argminv = np.argmin(v)
+
+        #if (maxv > 2) or (minv < -2):
+        #    print(f"{words[i]} maxv: {maxv},{argmaxv} minv:{minv},{argminv}")
+        if rangev > 10:
+            print(f"{words[i]} range:{rangev}, maxv: {maxv},{argmaxv} minv:{minv},{argminv}")
+        
+
 
 
 
