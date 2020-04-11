@@ -4,6 +4,7 @@ from embedding import *
 
 from sklearn.metrics import pairwise_distances_argmin_min
 import sys
+import npmi
 import argparse
 import string
 from pathlib import Path
@@ -11,8 +12,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pdb
 import math
-
-
 
 NSEEDS = 5
 
@@ -83,8 +82,12 @@ def main():
             bins, top_k_words = sort(labels, top_k,  words_index_intersect)
                 #print(top_k_words)
             # don't overload function name.
-        val, n_p = get_npmi(top_k_words, test_word_to_file, test_files_num)
-        npmi_score = np.around(val, 5)
+        #val, n_p = get_npmi(top_k_words, test_word_to_file, test_files_num)
+
+        val2 = npmi.average_npmi_topics(top_k_words, len(top_k_words), test_word_to_file,
+                test_files_num)
+
+        npmi_score = np.around(val2, 5)
         print("NPMI:" + str(npmi_score))
         npmis.append(npmi_score)
             #break;
@@ -153,7 +156,8 @@ def calc_pmi_matrix(word_intersect, word_in_file, window_total):
     print(pmi)
     return pmi
 
-
+""" 
+Deprecated; See npmi.py instead
 def pmi_wpair(word1, word2, word_in_file, window_total):
     eps = 10**(-12)
     w1_count = 0
@@ -195,7 +199,6 @@ def calc_topic_coherence(topic_words, word_in_file, files_num):
         pdb.set_trace()
     return float(sum(topic_assoc))/len(topic_assoc)
 
-
 def get_npmi(top_k_bins, word_in_file, files_num):
     ntopics = len(top_k_bins)
     npmi_scores = np.zeros(ntopics)
@@ -204,6 +207,7 @@ def get_npmi(top_k_bins, word_in_file, files_num):
         print(np.around(npmi_score, 5), " ".join(top_k_bins[k]))
         npmi_scores[k] = np.around(npmi_score, 5)
     return np.mean(npmi_scores), npmi_scores
+"""
 
 
 if __name__ == "__main__":
