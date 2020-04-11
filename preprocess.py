@@ -13,7 +13,7 @@ def create_vocab_and_files_20news(stopwords, type):
 
     for file_num in range(0, len(files)):
         words = files[file_num].lower().split()
-        words = [w.strip() for w in words]
+        #words = [w.strip() for w in words]
         for word in words:
             word = word.translate(strip_punct)
             word = word.translate(strip_digit)
@@ -31,9 +31,10 @@ def create_vocab_and_files_20news(stopwords, type):
                 word_to_file_mult[word].append(file_num)
 
     for word in list(word_to_file):
-        if len(word_to_file[word]) < 5 or len(word) <= 2:
+        if len(word_to_file[word]) < 5:
             word_to_file.pop(word, None)
             word_to_file_mult.pop(word, None)
+    print("Files:" + str(len(files)))
     print("Vocab: " + str(len(word_to_file)))
     #doc_to_word = np.zeros
     return word_to_file, word_to_file_mult, len(files)

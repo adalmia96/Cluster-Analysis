@@ -2,6 +2,7 @@ import gensim
 import fasttext.util
 import fasttext
 import numpy as np
+from sklearn import preprocessing
 from sklearn.decomposition import TruncatedSVD
 
 def create_id_dict(id2name):
@@ -40,7 +41,23 @@ def create_doc_to_word_emb(word_to_doc, file_num, word_list, dim):
     trun_ftw = TruncatedSVD(n_components=dim).fit_transform(word_to_doc_matrix)
     return trun_ftw
 
-def find_intersect(word_index, vocab, data, type):
+def find_intersect(word_index, vocab, data, files, type, add_doc):
+    if add_doc == "DUP":
+        return find_intersect_mult(word_index, vocab, data, type)
+    elif add_doc == "SVD":
+        intersection, words_index_intersect = find_intersect_unique(word_index, vocab, data, type)
+        u = create_doc_to_word_emb(vocab, files, words_index_intersect, 1000)
+        u = preprocessing.scale(u)
+        #intersection = np.concatenate((intersection, u), axis=1)
+        return u, words_index_intersect
+    else:
+        return find_intersect_unique(word_index, vocab, data, type)
+
+
+
+
+
+def find_intersect_unique(word_index, vocab, data, type):
     words = []
     vocab_embeddings = []
 
@@ -58,6 +75,7 @@ def find_intersect(word_index, vocab, data, type):
     vocab_embeddings = np.array(vocab_embeddings)
 
     return vocab_embeddings, words
+
 
 
 def find_intersect_mult(word_index, vocab, data, type):

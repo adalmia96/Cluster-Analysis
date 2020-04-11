@@ -223,10 +223,10 @@ def SpectralClustering_Model(vocab_embeddings, topics, rand, pmi):
 
     return m_clusters, find_top_10_words_mean(m_clusters, vocab_embeddings)
 
-def find_top_10_words_mean(m_clusters, vocab_embeddings):
+def find_top_10_words_mean(m_clusters, vocab_embeddings, clusters):
     indices = []
 
-    for i in range(20):
+    for i in range(clusters):
         data_idx_within_i_cluster = [ idx for idx, clu_num in enumerate(m_clusters) if clu_num == i ]
         one_cluster_tf_matrix = np.zeros((len(data_idx_within_i_cluster) , vocab_embeddings.shape[1]))
 
