@@ -142,7 +142,7 @@ def eb_dump(i, w2vb, w2vc):
     np.savetxt(f'embeds/bert_embeddings{i}-layer{args.layer}.txt', all_vecs, fmt = '%s', delimiter=" ")
     print(len(all_vecs))
     sys.stdout.flush()
-    
+
 def load_bert_models():
     model_class = BertModel
     tokenizer_class = BertTokenizer
@@ -182,4 +182,3 @@ def sanity_check(fn):
 
 if __name__ == "__main__":
     init()
-
