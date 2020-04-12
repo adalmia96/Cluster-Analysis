@@ -54,20 +54,34 @@ def init():
             valid_vocab.append(word)
     print(len(valid_vocab))
 
+    fills = []
+    j = 0
     for i, fil in enumerate(files):
+        if j % 1000 == 0:
+            fills = []
+            j = 0
+
         fil = fil.translate(strip_punct).translate(strip_digit).lower()
-        fil = [' '.join(fil.split())]
-        #print(fil)
-        if fil[0] == "":
+        fil = ' '.join(fil.split())
+        if fil == "":
             continue
-        embeddings = elmo(fil, signature="default", as_dict=True)["elmo"]
-        for w, word in enumerate(fil[0].split()):
-            if word in w2vb:
-                w2vb[word] += tf.squeeze(embeddings[:, w, :])
-                w2vc[word] += 1
-            elif word in vocab_counts:
-                w2vb[word] = tf.squeeze(embeddings[:, w, :])
-                w2vc[word] = 1
+
+        fills.append(fil)
+        j+=1
+
+        if j % 1000 == 0:
+
+            embeddings = elmo(fills, signature="default", as_dict=True)["elmo"]
+            print(embeddings.shape)
+            for k,fil in enumerate(fills):
+                for w, word in enumerate(fil.split()):
+                    if word in w2vb:
+                        w2vb[word] += tf.squeeze(embeddings[k, w, :])
+                        w2vc[word] += 1
+                    elif word in vocab_counts:
+                        w2vb[word] = tf.squeeze(embeddings[k, w, :])
+                        w2vc[word] = 1
+
 
         if i % 1000 == 0:
             print(i)
