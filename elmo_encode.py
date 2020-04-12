@@ -57,7 +57,7 @@ def init():
     fills = []
     j = 0
     for i, fil in enumerate(files):
-        if j % 1000 == 0:
+        if j % 10 == 0:
             fills = []
             j = 0
 
@@ -69,21 +69,26 @@ def init():
         fills.append(fil)
         j+=1
 
-        if j % 1000 == 0 or i == len(files)-1 :
+        if j % 10 == 0 or i == len(files)-1 :
 
             embeddings = elmo(fills, signature="default", as_dict=True)["elmo"]
+            with tf.Session() as sess:
+                sess.run(tf.global_variables_initializer())
+                sess.run(tf.tables_initializer())
+                embeddings = sess.run(embeddings)
+
             print(embeddings.shape)
             for k,fil in enumerate(fills):
                 for w, word in enumerate(fil.split()):
                     if word in w2vb:
-                        w2vb[word] += tf.squeeze(embeddings[k, w, :])
+                        w2vb[word] += np.squeeze(embeddings[k, w, :])
                         w2vc[word] += 1
                     elif word in vocab_counts:
-                        w2vb[word] = tf.squeeze(embeddings[k, w, :])
+                        w2vb[word] = np.squeeze(embeddings[k, w, :])
                         w2vc[word] = 1
 
 
-        if i % 1000 == 0 or i == len(files)-1:
+        if i % 10 == 0 or i == len(files)-1:
             print(i)
 
     #tf.compat.v1.enable_eager_execution()
@@ -94,20 +99,14 @@ def init():
 
 def eb_dump(w2vb, w2vc):
     all_vecs = []
-    with  tf.compat.v1.Session() as sess:
-        sess.run(tf.compat.v1.global_variables_initializer())
 
-        for word in w2vb:
-            w2vb[word] =sess.run(w2vb[word])
-            mean_vector = np.around(w2vb[word]/w2vc[word], 5)
-            #mean_vector = torch.mean(torch.stack(w2vb[word]), 0).detach().numpy()
-            vect = np.append(word, mean_vector)
-
-            if len(all_vecs)==0:
-                all_vecs = vect
-            else:
-                all_vecs = np.vstack((all_vecs, vect))
-
+    for i, word in enumerate(w2vb):
+        mean_vector = np.around(w2vb[word]/w2vc[word], 5)
+        vect = np.append(word, mean_vector)
+        if len(all_vecs)==0:
+            all_vecs = vect
+        else:
+            all_vecs = np.vstack((all_vecs, vect))
     np.savetxt(f'models/elmo_embeddings.txt', all_vecs, fmt = '%s', delimiter=" ")
     print(len(all_vecs))
 
