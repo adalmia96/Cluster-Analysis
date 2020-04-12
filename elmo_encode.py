@@ -69,7 +69,7 @@ def init():
         fills.append(fil)
         j+=1
 
-        if j % 1000 == 0:
+        if j % 1000 == 0 or i == len(files)-1 :
 
             embeddings = elmo(fills, signature="default", as_dict=True)["elmo"]
             print(embeddings.shape)
@@ -83,7 +83,7 @@ def init():
                         w2vc[word] = 1
 
 
-        if i % 1000 == 0:
+        if i % 1000 == 0 or i == len(files)-1:
             print(i)
 
     #tf.compat.v1.enable_eager_execution()
