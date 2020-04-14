@@ -5,4 +5,7 @@
 #$ -m ea
 #$ -M fengsf85@gmail.com
 
+CUDA=`free-gpu`
+export CUDA_VISIBLE_DEVICES=$CUDA
+
 python bert_encode.py --layer $1
