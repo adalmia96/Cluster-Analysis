@@ -52,7 +52,7 @@ def init():
     for word in vocab_counts:
         if len(vocab_counts[word])>5 and len(word)>2:
             valid_vocab.append(word)
-    print("johnhmpcemqeduau" in valid_vocab)
+    print("frankdsuucp" in valid_vocab)
 
     fills = []
     j = 0

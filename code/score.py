@@ -17,7 +17,7 @@ NSEEDS = 5
 
 def main():
     args = parse_args()
-
+    #combine_split_children()
     stopwords = set(line.strip() for line in open('stopwords_en.txt'))
     train_word_to_file, train_w_to_f_mult, files_num = create_vocab_and_files_20news(stopwords, "train")
     #train_word_to_file, train_w_to_f_mult, files_num = create_vocab_and_files_children(stopwords, "train")
@@ -29,11 +29,11 @@ def main():
         intersection, words_index_intersect  = find_intersect(model.vocab,  train_w_to_f_mult, model, files_num, args.entities, args.doc_info)
     elif args.entities == "fasttext":
         ft = fasttext.load_model('models/wiki.en.bin')
-        intersection, words_index_intersect = create_entities_ft(ft, train_word_to_file)
+        intersection, words_index_intersect = create_entities_ft(ft, train_w_to_f_mult, args.doc_info)
         print(intersection.shape)
 
     elif args.entities == "KG":
-        data, word_index = read_entity_file(args.entities_file, args.id2name)
+        data, word_index = read_entity_file(args.entities_file, args.id2name, train_word_to_file)
         intersection, words_index_intersect = find_intersect(word_index, train_w_to_f_mult, data, files_num, args.entities, args.doc_info)
 
     if args.use_dims:

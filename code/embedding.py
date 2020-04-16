@@ -12,7 +12,7 @@ def create_id_dict(id2name):
         data[mapping[0]] = mapping[1]
     return data
 
-def read_entity_file(file, id_to_word):
+def read_entity_file(file, id_to_word, vocab):
     data = []
     word_index = {}
     index = 0
@@ -24,10 +24,11 @@ def read_entity_file(file, id_to_word):
         embedding = line.split()
         if id_to_word != None:
             embedding[0] = mapping[embedding[0]][1:]
-        word_index[embedding[0]] = index
-        index +=1
-        embedding = list(map(float, embedding[1:]))
-        data.append(embedding)
+        if embedding[0] in vocab:
+            word_index[embedding[0]] = index
+            index +=1
+            embedding = list(map(float, embedding[-300:]))
+            data.append(embedding)
 
     print("KG: " + str(len(data)))
     return data, word_index
@@ -97,13 +98,18 @@ def find_intersect_mult(word_index, vocab, data, type):
     vocab_embeddings = np.array(vocab_embeddings)
     return vocab_embeddings, words
 
-def create_entities_ft(model, train_word_to_file):
+def create_entities_ft(model, train_word_to_file, doc_info):
     #print("getting fasttext embeddings..")
     vocab_embeddings = []
     words = []
     for word in train_word_to_file:
-        vocab_embeddings.append(model.get_word_vector(word))
-        words.append(word)
+        if doc_info:
+            for i in train_word_to_file[words]
+                vocab_embeddings.append(model.get_word_vector(word))
+                words.append(word)
+        else:
+            vocab_embeddings.append(model.get_word_vector(word))
+            words.append(word)
     vocab_embeddings = np.array(vocab_embeddings)
     #print("complete..")
     return vocab_embeddings, words
