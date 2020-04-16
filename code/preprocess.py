@@ -98,7 +98,7 @@ def create_vocab_and_files_20news(stopwords, type):
     print("Files:" + str(len(files)))
     print("Vocab: " + str(len(word_to_file)))
     #doc_to_word = np.zeros
-    return word_to_file, word_to_file_mult, len(files)
+    return create_vocab(stopwords, files)
 
 
 
@@ -114,6 +114,8 @@ def create_vocab(stopwords, data):
         words = data[file_num].lower().split()
         #words = [w.strip() for w in words]
         for word in words:
+            if "@" in word and "." in word:
+                continue
             word = word.translate(strip_punct)
             word = word.translate(strip_digit)
             if word in stopwords:
