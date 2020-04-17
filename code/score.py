@@ -24,17 +24,19 @@ def main():
     intersection = None
     words_index_intersect = None
 
+    data, bword_index = read_entity_file("models/bert_embeddings-layer12-average.txt", args.id2name, train_word_to_file)
+
     if args.entities == "word2vec":
         model = gensim.models.KeyedVectors.load_word2vec_format('models/GoogleNews-vectors-negative300.bin', binary=True)
-        intersection, words_index_intersect  = find_intersect(model.vocab,  train_w_to_f_mult, model, files_num, args.entities, args.doc_info)
+        intersection, words_index_intersect  = find_intersect(model.vocab,  train_w_to_f_mult, model, files_num, args.entities, args.doc_info, bword_index)
     elif args.entities == "fasttext":
         ft = fasttext.load_model('models/wiki.en.bin')
-        intersection, words_index_intersect = create_entities_ft(ft, train_w_to_f_mult, args.doc_info)
+        intersection, words_index_intersect = create_entities_ft(ft, train_w_to_f_mult, args.doc_info, bword_index)
         print(intersection.shape)
 
     elif args.entities == "KG":
         data, word_index = read_entity_file(args.entities_file, args.id2name, train_word_to_file)
-        intersection, words_index_intersect = find_intersect(word_index, train_w_to_f_mult, data, files_num, args.entities, args.doc_info)
+        intersection, words_index_intersect = find_intersect(word_index, train_w_to_f_mult, data, files_num, args.entities, args.doc_info, bword_index)
 
     if args.use_dims:
         intersection = PCA_dim_reduction(intersection, args.use_dims)

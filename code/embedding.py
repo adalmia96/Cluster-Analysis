@@ -42,27 +42,28 @@ def create_doc_to_word_emb(word_to_doc, file_num, word_list, dim):
     trun_ftw = TruncatedSVD(n_components=dim).fit_transform(word_to_doc_matrix)
     return trun_ftw
 
-def find_intersect(word_index, vocab, data, files, type, add_doc):
+def find_intersect(word_index, vocab, data, files, type, add_doc, bert):
     if add_doc == "DUP":
-        return find_intersect_mult(word_index, vocab, data, type)
+        return find_intersect_mult(word_index, vocab, data, type, bert)
     elif add_doc == "SVD":
-        intersection, words_index_intersect = find_intersect_unique(word_index, vocab, data, type)
+        intersection, words_index_intersect = find_intersect_unique(word_index, vocab, data, type, bert)
         u = create_doc_to_word_emb(vocab, files, words_index_intersect, 1000)
         u = preprocessing.scale(u)
         #intersection = np.concatenate((intersection, u), axis=1)
         return u, words_index_intersect
     else:
-        return find_intersect_unique(word_index, vocab, data, type)
+        return find_intersect_unique(word_index, vocab, data, type, bert)
 
 
 
 
 
-def find_intersect_unique(word_index, vocab, data, type):
+def find_intersect_unique(word_index, vocab, data, type, bert):
     words = []
     vocab_embeddings = []
 
     intersection = set(word_index.keys()) & set(vocab.keys())
+    intersection = set(bert.keys()) & intersection
     print("Intersection: " + str(len(intersection)))
 
     intersection = np.sort(np.array(list(intersection)))
@@ -79,11 +80,12 @@ def find_intersect_unique(word_index, vocab, data, type):
 
 
 
-def find_intersect_mult(word_index, vocab, data, type):
+def find_intersect_mult(word_index, vocab, data, type, bert):
     words = []
     vocab_embeddings = []
 
     intersection = set(word_index.keys()) & set(vocab.keys())
+    intersection = set(bert.keys()) & intersection
     print("Intersection: " + str(len(intersection)))
 
     intersection = np.sort(np.array(list(intersection)))
@@ -98,11 +100,13 @@ def find_intersect_mult(word_index, vocab, data, type):
     vocab_embeddings = np.array(vocab_embeddings)
     return vocab_embeddings, words
 
-def create_entities_ft(model, train_word_to_file, doc_info):
+def create_entities_ft(model, train_word_to_file, doc_info, bert):
     #print("getting fasttext embeddings..")
     vocab_embeddings = []
     words = []
-    for word in train_word_to_file:
+    intersection = set(train_word_to_file.keys()) & set(bert.keys())
+
+    for word in intersection:
         if doc_info:
             for i in train_word_to_file[words]:
                 vocab_embeddings.append(model.get_word_vector(word))
