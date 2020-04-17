@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#$ -l 'hostname=b1[12345678]*|c*,mem_free=5G,ram_free=5G,gpu=1'
+#$ -l 'hostname=c*,mem_free=5G,ram_free=5G,gpu=1'
 #$ -cwd
 #$ -q g.q
 #$ -m ea
@@ -8,4 +8,5 @@
 CUDA=`free-gpu`
 export CUDA_VISIBLE_DEVICES=$CUDA
 
-python bert_encode.py --layer $1
+python code/bert_encode.py --nlayer 12 --device $CUDA --agg_by $1 --save_fn \
+embeds/20NG-bert-layer12-$1.txt.swr
