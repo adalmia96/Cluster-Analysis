@@ -19,7 +19,8 @@ def main():
     args = parse_args()
 
     stopwords = set(line.strip() for line in open('stopwords_en.txt'))
-    train_word_to_file, train_w_to_f_mult, files_num = create_vocab_and_files_20news(stopwords, "train")
+    train_word_to_file, train_w_to_f_mult, files = create_vocab_and_files_20news(stopwords, "train")
+    files_num = len(files)
     #train_word_to_file, train_w_to_f_mult, files_num = create_vocab_and_files_children(stopwords, "train")
     intersection = None
     words_index_intersect = None

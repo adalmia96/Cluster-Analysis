@@ -37,7 +37,7 @@ def create_vocab_and_files_20news(stopwords, type):
     print("Files:" + str(len(files)))
     print("Vocab: " + str(len(word_to_file)))
     #doc_to_word = np.zeros
-    return word_to_file, word_to_file_mult, len(files)
+    return word_to_file, word_to_file_mult, files
 
 
 
