@@ -27,7 +27,7 @@ def read_entity_file(file, id_to_word, vocab):
         if embedding[0] in vocab:
             word_index[embedding[0]] = index
             index +=1
-            embedding = list(map(float, embedding[-300:]))
+            embedding = list(map(float, embedding[1:]))
             data.append(embedding)
 
     print("KG: " + str(len(data)))
