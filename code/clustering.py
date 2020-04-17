@@ -4,13 +4,13 @@ from sklearn_extra.cluster import KMedoids
 from sklearn.cluster import KMeans
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.cluster import SpectralClustering
-
+import pdb
 
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 
 #from spherecluster import SphericalKMeans
-#from spherecluster import VonMisesFisherMixture
+from spherecluster import VonMisesFisherMixture
 
 from sklearn.metrics.pairwise import rbf_kernel
 
@@ -196,13 +196,17 @@ def GMM_model(vocab_embeddings, vocab,  topics, rand):
     return GMM.predict(vocab_embeddings), indices, GMM
 
 def VonMisesFisherMixture_Model(vocab_embeddings, topics, rand):
-    vmf_soft = VonMisesFisherMixture(n_clusters=topics, posterior_type='hard', n_jobs=-1, random_state=rand).fit(vocab_embeddings)
-    print(vmf_soft.posterior_)
+    #vmf_soft = VonMisesFisherMixture(n_clusters=topics, posterior_type='hard', n_jobs=-1, random_state=rand).fit(vocab_embeddings)
+    print("fitting vmf...")
+    vmf_soft = VonMisesFisherMixture(n_clusters=topics, posterior_type='soft', n_jobs=-1, random_state=rand).fit(vocab_embeddings)
+
+    llh = vmf_soft.log_likelihood(vocab_embeddings)
     indices = []
     for i in range(topics):
-        density = vmf_soft.posterior_[i]
-        topk_vals = density.argsort()[-10:][::-1]
+
+        topk_vals = llh[i, :].argsort()[::-1][:10]
         indices.append(list(topk_vals))
+
     print(indices)
     return vmf_soft.predict(vocab_embeddings), indices
 
