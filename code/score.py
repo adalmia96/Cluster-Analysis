@@ -21,11 +21,13 @@ def main():
     stopwords = set(line.strip() for line in open('stopwords_en.txt'))
     train_word_to_file, train_w_to_f_mult, files = create_vocab_and_files_20news(stopwords, "train")
     files_num = len(files)
+
     #train_word_to_file, train_w_to_f_mult, files_num = create_vocab_and_files_children(stopwords, "train")
     intersection = None
     words_index_intersect = None
 
     data, bword_index = read_entity_file("models/bert_embeddings-layer12-average.txt", args.id2name, train_word_to_file)
+    get_tfidf_score(files, train_word_to_file, bword_index)
 
     if args.entities == "word2vec":
         model = gensim.models.KeyedVectors.load_word2vec_format('models/GoogleNews-vectors-negative300.bin', binary=True)
@@ -43,8 +45,8 @@ def main():
         intersection = PCA_dim_reduction(intersection, args.use_dims)
         #intersection = TSNE_dim_reduction(intersection, args.use_dims)
 
-    test_word_to_file, test_word_to_file_mult, test_files_num = create_vocab_and_files_20news(stopwords, "test")
-
+    test_word_to_file, test_word_to_file_mult, test_files = create_vocab_and_files_20news(stopwords, "test")
+    test_files_num = len(test_files)
     #test_word_to_file, test_word_to_file_mult, test_files_num = create_vocab_and_files_children(stopwords, "combined")
 
     npmis = []

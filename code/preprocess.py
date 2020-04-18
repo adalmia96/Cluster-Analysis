@@ -2,6 +2,7 @@ from sklearn.datasets import fetch_20newsgroups
 from sklearn.model_selection import KFold
 import string
 import numpy as np
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 
 def combine_split_children():
@@ -59,9 +60,6 @@ def combine_split_children():
     valid = files[indices[1]]
 
     return train, valid, test
-    # print(files)
-
-
 
 def create_vocab_and_files_20news(stopwords, type):
     word_to_file = {}
@@ -71,10 +69,6 @@ def create_vocab_and_files_20news(stopwords, type):
     files = train_data['data'];
     #doc_to_word = np.zeros
     return create_vocab(stopwords, files)
-
-
-
-
 
 def create_vocab(stopwords, data):
     word_to_file = {}
@@ -107,57 +101,60 @@ def create_vocab(stopwords, data):
         if len(word_to_file[word]) <= 5  or len(word) <= 3:
             word_to_file.pop(word, None)
             word_to_file_mult.pop(word, None)
-    print("although" in word_to_file)
     print("Files:" + str(len(data)))
     print("Vocab: " + str(len(word_to_file)))
 
     return word_to_file, word_to_file_mult, data
 
+def get_tfidf_score(data, train_vocab, b_word):
+    tfidf_vectorizer=TfidfVectorizer(use_idf=True)
+    tfidf_vectorizer_vectors=tfidf_vectorizer.fit_transform(data)
+    total_tf_idf = tfidf_vectorizer_vectors.sum(axis = 1)
+
+    vocab = set(tfidf_vectorizer.get_feature_names()) & set(train_vocab.keys())
+    vocab = set(b_word.keys()) & vocab
 
 
-
-
-
-def create_vocab_and_files_children(stopwords, type):
-
-    word_to_file = {}
-    word_to_file_mult = {}
-    index = 0
-    strip_punct = str.maketrans("", "", string.punctuation)
-    strip_digit = str.maketrans("", "", string.digits)
-
-    for line in open('data/CBTest/data/cbt_'+type+'.txt', 'r'):
-        words = line.strip()
-        if "BOOK_TITLE" in words:
-            continue
-        elif  "CHAPTER" in words:
-            words = words.lower().split()[2:]
-        else:
-            words = words.lower().split()
-
-
-        for word in words:
-            word = word.translate(strip_punct)
-            word = word.translate(strip_digit)
-
-            if word in stopwords:
-                continue
-            if word in word_to_file:
-                word_to_file[word].add(int(index/20))
-                word_to_file_mult[word].append(int(index/20))
-            else:
-                word_to_file[word]= set()
-                word_to_file_mult[word] = []
-
-                word_to_file[word].add(int(index/20))
-                word_to_file_mult[word].append(int(index/20))
-        index+=1
-
-    for word in list(word_to_file):
-        if len(word_to_file[word]) < 5 or len(word) <= 3:
-            word_to_file.pop(word, None)
-            word_to_file_mult.pop(word, None)
-    print(f"Length of {type} files:", int(index/20))
-    print("Vocab: " + str(len(word_to_file)))
-
-    return word_to_file, word_to_file_mult, index
+# def create_vocab_and_files_children(stopwords, type):
+#
+#     word_to_file = {}
+#     word_to_file_mult = {}
+#     index = 0
+#     strip_punct = str.maketrans("", "", string.punctuation)
+#     strip_digit = str.maketrans("", "", string.digits)
+#
+#     for line in open('data/CBTest/data/cbt_'+type+'.txt', 'r'):
+#         words = line.strip()
+#         if "BOOK_TITLE" in words:
+#             continue
+#         elif  "CHAPTER" in words:
+#             words = words.lower().split()[2:]
+#         else:
+#             words = words.lower().split()
+#
+#
+#         for word in words:
+#             word = word.translate(strip_punct)
+#             word = word.translate(strip_digit)
+#
+#             if word in stopwords:
+#                 continue
+#             if word in word_to_file:
+#                 word_to_file[word].add(int(index/20))
+#                 word_to_file_mult[word].append(int(index/20))
+#             else:
+#                 word_to_file[word]= set()
+#                 word_to_file_mult[word] = []
+#
+#                 word_to_file[word].add(int(index/20))
+#                 word_to_file_mult[word].append(int(index/20))
+#         index+=1
+#
+#     for word in list(word_to_file):
+#         if len(word_to_file[word]) < 5 or len(word) <= 3:
+#             word_to_file.pop(word, None)
+#             word_to_file_mult.pop(word, None)
+#     print(f"Length of {type} files:", int(index/20))
+#     print("Vocab: " + str(len(word_to_file)))
+#
+#     return word_to_file, word_to_file_mult, index
