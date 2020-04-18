@@ -104,14 +104,14 @@ def create_vocab(stopwords, data):
                 word_to_file_mult[word].append(file_num)
 
     for word in list(word_to_file):
-        if len(word_to_file[word]) <= 5:
+        if len(word_to_file[word]) <= 5  or len(word) <= 3:
             word_to_file.pop(word, None)
             word_to_file_mult.pop(word, None)
-
+    print("although" in word_to_file)
     print("Files:" + str(len(data)))
     print("Vocab: " + str(len(word_to_file)))
 
-    return word_to_file, word_to_file_mult, len(data)
+    return word_to_file, word_to_file_mult, data
 
 
 
@@ -154,7 +154,7 @@ def create_vocab_and_files_children(stopwords, type):
         index+=1
 
     for word in list(word_to_file):
-        if len(word_to_file[word]) < 5:
+        if len(word_to_file[word]) < 5 or len(word) <= 3:
             word_to_file.pop(word, None)
             word_to_file_mult.pop(word, None)
     print(f"Length of {type} files:", int(index/20))
