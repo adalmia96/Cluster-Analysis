@@ -16,11 +16,16 @@ argparser = argparse.ArgumentParser()
 argparser.add_argument('--nlayer', default=12, type=int, help="layer of bert to extract")
 argparser.add_argument('--save_fn', default="", type=str, help="filename to save bert embeddings")
 argparser.add_argument('--agg_by', default="firstword", type=str, help="method for aggregating compound words")
+argparser.add_argument('--device', default=0, required=False)
 args = argparser.parse_args()
 
 # Custom imports
 import torch
 from pytorch_transformers import *
+
+device = torch.device("cuda:{}".format(args.device) if int(args.device)>=0 else "cpu")
+print("using device:", device)
+
 
 """ Helper Class to Extract Contextualised Word Embeddings from a Document. 
 
@@ -40,6 +45,7 @@ Dependencies:
 class BertWordFromTextEncoder:
 
     def __init__(self, valid_vocab=None):
+        self.device = device
         self.sent_tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
         self.model, self.bert_tokenizer = self.load_bert_models()
         self.w2vb = {} #embeds_sum
@@ -55,7 +61,8 @@ class BertWordFromTextEncoder:
 
     def test_encoder(self):
 
-        input_ids = torch.tensor([self.bert_tokenizer.encode('Here is some text to encode')])
+        input_ids = torch.tensor([self.bert_tokenizer.encode('Here is some text to \
+            encode')]).to(self.device)
         last_hidden_states = self.model(input_ids)[0][0]
         print("Bert models are working fine\n")
 
@@ -65,13 +72,14 @@ class BertWordFromTextEncoder:
         tokenizer_class = BertTokenizer
         pretrained_weights = 'bert-base-uncased'
         tokenizer = tokenizer_class.from_pretrained(pretrained_weights)
-        model = model_class.from_pretrained(pretrained_weights, output_hidden_states=True)
+        model = model_class.from_pretrained(pretrained_weights,
+                output_hidden_states=True).to(self.device)
 
         return model, tokenizer
     
     def _add_word(self, compound_word, compound_ixs, embeds):
 
-        word = "".join(compound_word)
+        word = "".join(compound_word).lower()
 
         if self.agg_by=="firstword":
             w = compound_ixs[0] 
@@ -81,6 +89,8 @@ class BertWordFromTextEncoder:
             for w in compound_ixs:
                 total_emb += embeds[w]
             emb = total_emb/len(compound_ixs)
+
+        emb = emb.cpu().detach().numpy()
 
         if word in self.valid_vocab:
             if len(compound_ixs)>1:
@@ -98,7 +108,7 @@ class BertWordFromTextEncoder:
 
         all_vecs = []
         for word in self.w2vb:
-            mean_vector = np.around(self.w2vb[word].detach().numpy()/self.w2vc[word], 5)
+            mean_vector = np.around(self.w2vb[word]/self.w2vc[word], 5)
             vect = np.append(word, mean_vector)
             all_vecs.append(vect)
 
@@ -138,7 +148,7 @@ class BertWordFromTextEncoder:
                         # long sentences are going to crash/run out of mem.
                         continue
 
-                    input_ids = torch.tensor([self.bert_tokenizer.encode(sent)])
+                    input_ids = torch.tensor([self.bert_tokenizer.encode(sent)]).to(self.device)
                     # words correspond to input_ids correspond to embeds
 
                     try:
@@ -175,15 +185,17 @@ def init():
     """ Sample script """
 
     import preprocess
-    stopwords = "stopwords_en.txt"
+    stopwords = set(line.strip() for line in open("stopwords_en.txt"))
     word_to_file, word_to_file_mult, files = preprocess.create_vocab_and_files_20news(stopwords, "train")
+
     valid_vocab = word_to_file.keys()
     print("vocab size:", len(valid_vocab))
+
 
     ### this is what you care about
     encoder = BertWordFromTextEncoder(valid_vocab=valid_vocab)
     encoder.test_encoder()
-    encoder.encode_docs(docs=files[:101], save_fn=args.save_fn, agg_by=args.agg_by, layer=args.nlayer)
+    encoder.encode_docs(docs=files, save_fn=args.save_fn, agg_by=args.agg_by, layer=args.nlayer)
 
 
 # helper function to sanity check your embeddings :/

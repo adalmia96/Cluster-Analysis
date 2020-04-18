@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
-for x in {8..12}; do
-  qsub -N layer$x -o logs/qsub -e logs/qsub_e ./bin/run2.sh $x
-done
+#for x in firstword average; do
+#  qsub -N Bl12 -o logs/qsub -e logs/qsub_e ./bin/run2.sh $x
+#done
+
+qsub -N elmo -o logs/qsub -e logs/qsub_e ./bin/runelmo.sh $x
+#qsub -N Bl12 -o logs/qsub -e logs/qsub_e ./bin/run2.sh average 
+

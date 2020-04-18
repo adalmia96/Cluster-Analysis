@@ -5,8 +5,9 @@
 #$ -m ea
 #$ -M fengsf85@gmail.com
 
+conda activate allennlp
+
 CUDA=`free-gpu`
 export CUDA_VISIBLE_DEVICES=$CUDA
 
-python code/bert_encode.py --nlayer 12 --device $CUDA --agg_by $1 --save_fn \
-embeds/20NG-bert-layer12-$1.txt.swr
+python code/elmo_encode.py --nlayer 12 --device $CUDA --save_fn embeds/20ng-elmo-layer3.txt.swr
