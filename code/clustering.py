@@ -78,35 +78,10 @@ def KMedoids_model(vocab_embeddings, vocab, topics,  rand):
     centers = np.array(kmedoids.cluster_centers_)
     indices = []
 
-    indices = []
-
     for i in range(20):
-        center_vec = centers[i]
-        data_idx_within_i_cluster = [ idx for idx, clu_num in enumerate(m_clusters) if clu_num == i ]
+        topk_vals = sort_closest_center(centers[i], m_clusters, vocab_embeddings, i)
+        indices.append(find_top_k_words(100, topk_vals, vocab))
 
-        one_cluster_tf_matrix = np.zeros((len(data_idx_within_i_cluster) , centers.shape[1]))
-
-        for row_num, data_idx in enumerate(data_idx_within_i_cluster):
-            one_row = vocab_embeddings[data_idx]
-            one_cluster_tf_matrix[row_num] = one_row
-
-
-        dist_X =  np.sum((one_cluster_tf_matrix - center_vec)**2, axis = 1)
-        #topk = min(10, len(data_idx_within_i_cluster))
-        #topk_vals = dist_X.argsort()[:topk].astype(int)
-
-        topk_vals = dist_X.argsort().astype(int)
-        ind = []
-        unique = set()
-        for i in topk_vals:
-            word = vocab[data_idx_within_i_cluster[i]]
-            if word not in unique:
-                ind.append(data_idx_within_i_cluster[i])
-                unique.add(vocab[data_idx_within_i_cluster[i]])
-                if (len(unique)==10):
-                    break
-
-        indices.append(ind)
     return m_clusters, indices
 
 def KMeans_model(vocab_embeddings, vocab, topics, rand):
@@ -117,31 +92,8 @@ def KMeans_model(vocab_embeddings, vocab, topics, rand):
     indices = []
 
     for i in range(topics):
-        center_vec = centers[i]
-        data_idx_within_i_cluster = [ idx for idx, clu_num in enumerate(m_clusters) if clu_num == i ]
-
-        one_cluster_tf_matrix = np.zeros((len(data_idx_within_i_cluster) , centers.shape[1]))
-
-        for row_num, data_idx in enumerate(data_idx_within_i_cluster):
-            one_row = vocab_embeddings[data_idx]
-            one_cluster_tf_matrix[row_num] = one_row
-
-
-        dist_X =  np.sum((one_cluster_tf_matrix - center_vec)**2, axis = 1)
-        #topk = min(10, len(data_idx_within_i_cluster))
-        #topk_vals = dist_X.argsort()[:topk].astype(int)
-
-        topk_vals = dist_X.argsort().astype(int)
-        ind = []
-        unique = set()
-        for i in topk_vals:
-            word = vocab[data_idx_within_i_cluster[i]]
-            if word not in unique:
-                ind.append(data_idx_within_i_cluster[i])
-                unique.add(vocab[data_idx_within_i_cluster[i]])
-                if (len(unique)==10):
-                    break
-        indices.append(ind)
+        topk_vals = sort_closest_center(centers[i], m_clusters, vocab_embeddings, i)
+        indices.append(find_top_k_words(100, topk_vals, vocab))
         #print(indices)
     return m_clusters, indices
 
@@ -176,23 +128,10 @@ def SphericalKMeans_model(vocab_embeddings, topics, rand):
 def GMM_model(vocab_embeddings, vocab,  topics, rand):
     GMM = GaussianMixture(n_components=topics, random_state=rand).fit(vocab_embeddings)
     indices = []
-
     for i in range(GMM.n_components):
-        #print(GMM.means_[i])
         density = scipy.stats.multivariate_normal(cov=GMM.covariances_[i], mean=GMM.means_[i]).logpdf(vocab_embeddings)
         topk_vals = density.argsort()[-1*len(density):][::-1].astype(int)
-        ind = []
-        unique = set()
-        for i in topk_vals:
-            word = vocab[i]
-            if word not in unique:
-                ind.append(i)
-                unique.add(vocab[i])
-                if (len(unique)==10):
-                    break
-        indices.append(ind)
-
-    #print(indices)
+        indices.append(find_top_k_words(100, topk_vals, vocab))
     return GMM.predict(vocab_embeddings), indices, GMM
 
 def VonMisesFisherMixture_Model(vocab_embeddings, topics, rand):
@@ -226,6 +165,46 @@ def SpectralClustering_Model(vocab_embeddings, topics, rand, pmi):
     m_clusters = SC.labels_
 
     return m_clusters, find_top_10_words_mean(m_clusters, vocab_embeddings)
+
+def sort_closest_center(center_vec, m_clusters,vocab_embeddings, c_ind):
+    data_idx_within_i_cluster = np.array([ idx for idx, clu_num in enumerate(m_clusters) if clu_num == c_ind ])
+    one_cluster_tf_matrix = np.zeros((len(data_idx_within_i_cluster) , center_vec.shape[0]))
+
+    for row_num, data_idx in enumerate(data_idx_within_i_cluster):
+        one_row = vocab_embeddings[data_idx]
+        one_cluster_tf_matrix[row_num] = one_row
+
+    dist_X =  np.sum((one_cluster_tf_matrix - center_vec)**2, axis = 1)
+    #topk = min(10, len(data_idx_within_i_cluster))
+    #topk_vals = dist_X.argsort()[:topk].astype(int)
+
+    topk_vals = dist_X.argsort().astype(int)
+    topk_vals = data_idx_within_i_cluster[topk_vals]
+
+    return topk_vals
+
+def find_top_k_words(k, top_vals, vocab):
+    ind = []
+    unique = set()
+    for i in top_vals:
+        word = vocab[i]
+        if word not in unique:
+            ind.append(i)
+            unique.add(vocab[i])
+            if len(unique) == k:
+                break
+    return ind
+
+def rank_freq(top_k_words, train_w_to_f_mult):
+    top_10_words = []
+    for words in top_k_words:
+        words = np.array(words)
+        count = np.array([len(train_w_to_f_mult[word]) for word in words ])
+        topk_vals = count.argsort()[-10:][::-1].astype(int)
+        top_10_words.append(words[topk_vals])
+    return top_10_words
+
+
 
 def find_top_10_words_mean(m_clusters, vocab_embeddings, clusters):
     indices = []

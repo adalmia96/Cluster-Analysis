@@ -17,7 +17,7 @@ NSEEDS = 5
 
 def main():
     args = parse_args()
-
+    #combine_split_children()
     stopwords = set(line.strip() for line in open('stopwords_en.txt'))
     train_word_to_file, train_w_to_f_mult, files = create_vocab_and_files_20news(stopwords, "train")
     files_num = len(files)
@@ -25,17 +25,19 @@ def main():
     intersection = None
     words_index_intersect = None
 
+    data, bword_index = read_entity_file("models/bert_embeddings-layer12-average.txt", args.id2name, train_word_to_file)
+
     if args.entities == "word2vec":
         model = gensim.models.KeyedVectors.load_word2vec_format('models/GoogleNews-vectors-negative300.bin', binary=True)
-        intersection, words_index_intersect  = find_intersect(model.vocab,  train_w_to_f_mult, model, files_num, args.entities, args.doc_info)
+        intersection, words_index_intersect  = find_intersect(model.vocab,  train_w_to_f_mult, model, files_num, args.entities, args.doc_info, bword_index)
     elif args.entities == "fasttext":
         ft = fasttext.load_model('models/wiki.en.bin')
-        intersection, words_index_intersect = create_entities_ft(ft, train_word_to_file)
+        intersection, words_index_intersect = create_entities_ft(ft, train_w_to_f_mult, args.doc_info, bword_index)
         print(intersection.shape)
 
     elif args.entities == "KG":
-        data, word_index = read_entity_file(args.entities_file, args.id2name)
-        intersection, words_index_intersect = find_intersect(word_index, train_w_to_f_mult, data, files_num, args.entities, args.doc_info)
+        data, word_index = read_entity_file(args.entities_file, args.id2name, train_word_to_file)
+        intersection, words_index_intersect = find_intersect(word_index, train_w_to_f_mult, data, files_num, args.entities, args.doc_info, bword_index)
 
     if args.use_dims:
         intersection = PCA_dim_reduction(intersection, args.use_dims)
@@ -85,17 +87,14 @@ def main():
             top_k_words = [tw.strip().replace(',', '').split() for tw in top_k_words]
             for i, top_k in enumerate(top_k_words):
                 top_k_words[i] = top_k_words[i][2:12]
-            #print(top_k_words)
         else:
             bins, top_k_words = sort(labels, top_k,  words_index_intersect)
-                #print(top_k_words)
-            # don't overload function name.
-        #val, n_p = get_npmi(top_k_words, test_word_to_file, test_files_num)
+            top_k_words = rank_freq(top_k_words, train_w_to_f_mult)
 
-        val2 = npmi.average_npmi_topics(top_k_words, len(top_k_words), test_word_to_file,
+        val = npmi.average_npmi_topics(top_k_words, len(top_k_words), test_word_to_file,
                 test_files_num)
 
-        npmi_score = np.around(val2, 5)
+        npmi_score = np.around(val, 5)
         print("NPMI:" + str(npmi_score))
         npmis.append(npmi_score)
             #break;
@@ -122,6 +121,7 @@ def sort(labels, indices, word_index):
             top_k.append(word_index[word_ind])
         top_k_bins.append(top_k)
     return bins, top_k_bins
+
 def print_bins(bins, name, type):
     f = open(name + "_" + type + "_corpus_bins.txt","w+")
     for i in range(0, 20):
@@ -131,6 +131,7 @@ def print_bins(bins, name, type):
         f.write("\n\n")
 
     f.close()
+
 def print_top_k(top_k_bins, name, type):
     f = open(name + "_" + type + "_corpus_top_k.txt","w+")
     for i in range(0, 20):

@@ -28,12 +28,12 @@ options_file \
 weight_file \
 = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5"
 
-device=torch.device("cuda:{}".format(args.device) if int(args.device)>=0 else "cpu") 
+device=torch.device("cuda:{}".format(args.device) if int(args.device)>=0 else "cpu")
 print("using device:", device)
 
-""" Helper Class to Extract Contextualised Word Embeddings from a Document. 
+""" Helper Class to Extract Contextualised Word Embeddings from a Document.
 
-1. Assumes a sentence is a window for Contextual embeddings. 
+1. Assumes a sentence is a window for Contextual embeddings.
 3. Extract from Elmo
 4. Requires GPU to use the encoders, not tested/debugged on cpu.
 
@@ -123,7 +123,7 @@ class ElmoWordFromTextEncoder:
                 total_len = sum([len(s) for s in sents])
                 if total_len==0 or len(sents)>50:
                     continue
-                
+
                 char_ids = batch_to_ids(sents).to(self.device)
                 try:
                     embeds = self.model(char_ids)
@@ -181,8 +181,7 @@ def sanity_check(fn):
         #    print(f"{words[i]} maxv: {maxv},{argmaxv} minv:{minv},{argminv}")
         if rangev > 10:
             print(f"{words[i]} range:{rangev}, maxv: {maxv},{argmaxv} minv:{minv},{argminv}")
- 
+
 
 if __name__ == "__main__":
     init()
-    
