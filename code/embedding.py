@@ -108,7 +108,7 @@ def create_entities_ft(model, train_word_to_file, doc_info, bert):
 
     for word in intersection:
         if doc_info:
-            for i in train_word_to_file[words]:
+            for i in train_word_to_file[word]:
                 vocab_embeddings.append(model.get_word_vector(word))
                 words.append(word)
         else:
