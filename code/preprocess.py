@@ -50,14 +50,14 @@ def combine_split_children():
     kf = KFold(n_splits=10, shuffle=True, random_state = 0)
     indices = list(kf.split(files))[0]
 
-    train = files[indices[0]]
+    train_valid = files[indices[0]]
     test = files[indices[1]]
 
     kf = KFold(n_splits=9, shuffle=True, random_state = 0)
-    indices = list(kf.split(train))[0]
+    indices = list(kf.split(train_valid))[0]
 
-    train = files[indices[0]]
-    valid = files[indices[1]]
+    train = train_valid[indices[0]]
+    valid = train_valid[indices[1]]
 
     return train, valid, test
 
