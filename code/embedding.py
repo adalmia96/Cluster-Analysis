@@ -117,3 +117,23 @@ def create_entities_ft(model, train_word_to_file, doc_info, bert):
     vocab_embeddings = np.array(vocab_embeddings)
     #print("complete..")
     return vocab_embeddings, words
+
+def get_weights_freq(vocab_list, weights):
+    return [len(weights[w]) for w in vocab_list]
+
+def get_weights_tfidf(vocab_list, weights):
+    return [weights[w] for w in vocab_list]
+
+def get_weights_tfdf(vocab_list, word_file_count, files_num):
+    count = np.array(get_weights_freq(vocab_list, word_file_count))
+    tf = count
+
+    df = np.array([len(np.unique(word_file_count[w])) for w in vocab_list])
+    df = df
+
+    weights = tf * df
+    tfdf = {}
+    for i, w in enumerate(vocab_list):
+        tfdf[w]=weights[i]
+
+    return weights, tfdf

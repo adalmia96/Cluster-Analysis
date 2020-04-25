@@ -107,12 +107,23 @@ def create_vocab(stopwords, data):
     return word_to_file, word_to_file_mult, data
 
 def get_tfidf_score(data, train_vocab, b_word):
+    tf_idf_score = {}
+
     tfidf_vectorizer=TfidfVectorizer(use_idf=True)
     tfidf_vectorizer_vectors=tfidf_vectorizer.fit_transform(data)
-    total_tf_idf = tfidf_vectorizer_vectors.sum(axis = 1)
 
-    vocab = set(tfidf_vectorizer.get_feature_names()) & set(train_vocab.keys())
+    words = tfidf_vectorizer.get_feature_names()
+    total_tf_idf = tfidf_vectorizer_vectors.toarray().sum(axis=0)
+
+    vocab = set(words) & set(train_vocab.keys())
     vocab = set(b_word.keys()) & vocab
+
+    for i, word in enumerate(words):
+        if word in vocab:
+            tf_idf_score[word] = total_tf_idf[i]
+
+    return tf_idf_score
+
 
 
 # def create_vocab_and_files_children(stopwords, type):

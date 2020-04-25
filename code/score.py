@@ -27,7 +27,7 @@ def main():
     words_index_intersect = None
 
     data, bword_index = read_entity_file("models/bert_embeddings-layer12-average.txt", args.id2name, train_word_to_file)
-    get_tfidf_score(files, train_word_to_file, bword_index)
+    tf_idf = get_tfidf_score(files, train_word_to_file, bword_index)
 
     if args.entities == "word2vec":
         model = gensim.models.KeyedVectors.load_word2vec_format('models/GoogleNews-vectors-negative300.bin', binary=True)
@@ -45,6 +45,14 @@ def main():
         intersection = PCA_dim_reduction(intersection, args.use_dims)
         #intersection = TSNE_dim_reduction(intersection, args.use_dims)
 
+
+    weights = None
+    if args.doc_info == "WGT":
+        weights = get_weights_freq(words_index_intersect, train_w_to_f_mult)
+    #weights = get_weights_tfidf(words_index_intersect, tf_idf)
+    #weights, tfdf = get_weights_tfdf(words_index_intersect, train_w_to_f_mult, files_num)
+
+
     test_word_to_file, test_word_to_file_mult, test_files = create_vocab_and_files_20news(stopwords, "test")
     test_files_num = len(test_files)
     #test_word_to_file, test_word_to_file_mult, test_files_num = create_vocab_and_files_children(stopwords, "combined")
@@ -60,9 +68,9 @@ def main():
     for rand in range(NSEEDS):
         #print("Eps:" + str(rand))
         if args.clustering_algo == "KMeans":
-            labels, top_k  = KMeans_model(intersection, words_index_intersect, args.topics, rand)
+            labels, top_k  = KMeans_model(intersection, words_index_intersect, args.topics, args.rerank, rand, weights)
         elif args.clustering_algo == "SPKMeans":
-            labels, top_k  = SphericalKMeans_model(intersection, args.topics, rand)
+            labels, top_k  = SphericalKMeans_model(intersection, words_index_intersect, args.topics, args.rerank, rand, weights)
         elif args.clustering_algo == "Spectral":
             labels, top_k  = SpectralClustering_Model(intersection, args.topics, rand,  pmi_mat)
         elif args.clustering_algo == "KMedoids":
@@ -91,7 +99,9 @@ def main():
                 top_k_words[i] = top_k_words[i][2:12]
         else:
             bins, top_k_words = sort(labels, top_k,  words_index_intersect)
-            top_k_words = rank_freq(top_k_words, train_w_to_f_mult)
+            #top_k_words = rank_td_idf(top_k_words, tfdf)
+            #top_k_words = rank_td_idf(top_k_words, tf_idf)
+            top_k_words =  rank_freq(top_k_words, train_w_to_f_mult)
 
         val = npmi.average_npmi_topics(top_k_words, len(top_k_words), test_word_to_file,
                 test_files_num)
@@ -152,10 +162,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument( "--entities_file", type=str, help="entity file")
     parser.add_argument( "--topics_file", type=str, help="topics file")
     parser.add_argument('--id2name', type=Path, help="id2name file")
-    parser.add_argument('--use_dims', type=int, default=300)
+    parser.add_argument('--use_dims', type=int)
     parser.add_argument('--topics', type=int, default=20)
 
-    parser.add_argument("--doc_info", type=str, choices=["SVD", "DUP"])
+    parser.add_argument("--doc_info", type=str, choices=["SVD", "DUP", "WGT"])
+    parser.add_argument("--rerank", type=str, choices=["freq"])
     args = parser.parse_args()
     return args
 
