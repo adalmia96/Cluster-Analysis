@@ -82,7 +82,7 @@ def main():
             labels, top_k  = DBSCAN_model(intersection_unique,  k)
         elif args.clustering_algo == "GMM":
             # top_k are indexes of the vocabulary
-            labels, top_k, gmm  = GMM_model(intersection, words_index_intersect, args.topics, rand)
+            labels, top_k, gmm  = GMM_model(intersection, words_index_intersect, args.topics, args.rerank, rand)
         elif args.clustering_algo == "VMFM":
             # top_k are indexes of the vocabulary
             labels, top_k = VonMisesFisherMixture_Model(intersection, args.topics, rand)
