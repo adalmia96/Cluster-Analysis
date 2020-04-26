@@ -45,12 +45,14 @@ def main():
         intersection = PCA_dim_reduction(intersection, args.use_dims)
         #intersection = TSNE_dim_reduction(intersection, args.use_dims)
 
-
+    _ , tfdf = get_weights_tfdf(words_index_intersect, train_w_to_f_mult, files_num)
     weights = None
     if args.doc_info == "WGT":
+
         weights = get_weights_freq(words_index_intersect, train_w_to_f_mult)
+
     #weights = get_weights_tfidf(words_index_intersect, tf_idf)
-    #weights, tfdf = get_weights_tfdf(words_index_intersect, train_w_to_f_mult, files_num)
+    #
 
 
     test_word_to_file, test_word_to_file_mult, test_files = create_vocab_and_files_20news(stopwords, "test")
@@ -98,10 +100,14 @@ def main():
             for i, top_k in enumerate(top_k_words):
                 top_k_words[i] = top_k_words[i][2:12]
         else:
+
             bins, top_k_words = sort(labels, top_k,  words_index_intersect)
-            #top_k_words = rank_td_idf(top_k_words, tfdf)
-            #top_k_words = rank_td_idf(top_k_words, tf_idf)
-            top_k_words =  rank_freq(top_k_words, train_w_to_f_mult)
+            if args.rerank=="freq":
+                top_k_words =  rank_freq(top_k_words, train_w_to_f_mult)
+            elif args.rerank=="tfidf":
+                top_k_words = rank_td_idf(top_k_words, tf_idf)
+            elif args.rerank=="tfdf":
+                top_k_words = rank_td_idf(top_k_words, tfdf)
 
         val = npmi.average_npmi_topics(top_k_words, len(top_k_words), test_word_to_file,
                 test_files_num)
@@ -166,7 +172,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--topics', type=int, default=20)
 
     parser.add_argument("--doc_info", type=str, choices=["SVD", "DUP", "WGT"])
-    parser.add_argument("--rerank", type=str, choices=["freq"])
+    parser.add_argument("--rerank", type=str, choices=["freq", "tfidf", "tfdf"])
     args = parser.parse_args()
     return args
 
