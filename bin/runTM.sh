@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
+#Author: Suzanna Sia
+
+TrainTextDir=/export/c12/ssia/shared/Cluster-Analysis/data/for_lda
+MALLETDIR=/home/ssia/packages/Mallet
 
 # Modify This
-#TrainTextDir=
-#MALLETDIR=
-#SAVEDIR=
-#NTOPICS
+SAVEDIR=/home/ssia/projects/Cluster-Analysis/mallet_temp
+NTOPICS=20
 
 mkdir -p $SAVEDIR/
 
@@ -19,15 +21,16 @@ $MALLETDIR/bin/mallet import-dir --input $TrainTextDir --output $TransF --keep-s
 
 printf "Running Topic Model..\n"
 $MALLETDIR/bin/mallet train-topics --input $TransF --num-topics $NTOPICS --output-doc-topics \
-$TransTopics --output-state $SAVEDIR/topic-state.gz --output-model $TopicModel
+$TransTopics --output-state $SAVEDIR/topic-state.gz --output-model $TopicModel \
+--output-topic-keys $TopicWords 
 
-printf "Convert model to inferencer..\n"
-$MALLETDIR/bin/mallet train-topics --input-model $TopicModel --inferencer-filename $Inferencer --num-iterations 0
+#printf "Convert model to inferencer..\n"
+#$MALLETDIR/bin/mallet train-topics --input-model $TopicModel --inferencer-filename $Inferencer --num-iterations 0
 
-printf "Infer topics from new docs..\n"
-$MALLETDIR/bin/mallet infer-topics --inferencer $Inferencer --input $TransF --output-doc-topics $QueryTopicsTrain
+#printf "Infer topics from new docs..\n"
+#$MALLETDIR/bin/mallet infer-topics --inferencer $Inferencer --input $TransF --output-doc-topics $QueryTopicsTrain
 
-printf "Infer top words from topic..\n"
+#printf "Infer top words from topic..\n"
 #this doesnt work
 #$MALLETDIR/bin/mallet infer-topics --inferencer $Inferencer --input $TransF --output-topic-keys $TopicWords
 

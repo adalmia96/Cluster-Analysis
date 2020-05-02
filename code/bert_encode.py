@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# -*- coding: utf-8 -*-
 # Author: Suzanna Sia
 
 # Standard imports
@@ -17,6 +18,7 @@ argparser.add_argument('--nlayer', default=12, type=int, help="layer of bert to 
 argparser.add_argument('--save_fn', default="", type=str, help="filename to save bert embeddings")
 argparser.add_argument('--agg_by', default="firstword", type=str, help="method for aggregating compound words")
 argparser.add_argument('--device', default=0, required=False)
+argparser.add_argument('--data', default="20NG", required=False)
 args = argparser.parse_args()
 
 # Custom imports
@@ -127,7 +129,7 @@ class BertWordFromTextEncoder:
         self.agg_by = agg_by
 
         if len(save_fn)==0:
-            save_fn = f"bert_embeddings-layer{args.nlayer}-{agg_by}.txt"
+            save_fn = f"{args.data}-bert-layer{args.nlayer}-{agg_by}.txt"
             print(f"No save filename provided, saving to: {save_fn}")
 
         start = time.time()
@@ -185,8 +187,15 @@ def init():
     """ Sample script """
 
     import preprocess
-    stopwords = set(line.strip() for line in open("stopwords_en.txt"))
-    word_to_file, word_to_file_mult, files = preprocess.create_vocab_and_files_20news(stopwords, "train")
+    stopwords = set(line.strip() for line in open("stopwords_en.txt", encoding='utf-8'))
+    word_to_file = {}
+
+    if args.data == "20NG":
+        word_to_file, word_to_file_mult, files = preprocess.create_vocab_and_files_20news(stopwords, "train")
+
+    elif args.data == "cb":
+        train, valid, test = preprocess.combine_split_children()
+        word_to_file, word_to_file_mult, files = preprocess.create_vocab(stopwords, train)
 
     valid_vocab = word_to_file.keys()
     print("vocab size:", len(valid_vocab))

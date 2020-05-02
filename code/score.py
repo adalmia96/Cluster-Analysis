@@ -21,12 +21,16 @@ def main():
     stopwords = set(line.strip() for line in open('stopwords_en.txt'))
     train_word_to_file, train_w_to_f_mult, files = create_vocab_and_files_20news(stopwords, "train")
     files_num = len(files)
+    print("len vocab size:", len(train_word_to_file.keys()))
 
     #train_word_to_file, train_w_to_f_mult, files_num = create_vocab_and_files_children(stopwords, "train")
     intersection = None
     words_index_intersect = None
 
-    data, bword_index = read_entity_file("models/bert_embeddings-layer12-average.txt", args.id2name, train_word_to_file)
+    #data, bword_index = read_entity_file("models/bert_embeddings-layer12-average.txt", args.id2name, train_word_to_file)
+    data, bword_index = read_entity_file("embeds/20NG-bert-layer12-average.txt.swr",
+            args.id2name, train_word_to_file)
+
     tf_idf = get_tfidf_score(files, train_word_to_file, bword_index)
 
     if args.entities == "word2vec":

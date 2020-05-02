@@ -1,9 +1,10 @@
-import gensim
+#import gensim
 import fasttext.util
 import fasttext
 import numpy as np
 from sklearn import preprocessing
 from sklearn.decomposition import TruncatedSVD
+import pdb
 
 def create_id_dict(id2name):
     data = {}
@@ -27,7 +28,8 @@ def read_entity_file(file, id_to_word, vocab):
         if embedding[0] in vocab:
             word_index[embedding[0]] = index
             index +=1
-            embedding = list(map(float, embedding[1:]))
+            #embedding = list(map(float, embedding[1:]))
+            embedding = list(map(float, embedding[-300:]))
             data.append(embedding)
 
     print("KG: " + str(len(data)))
@@ -119,7 +121,13 @@ def create_entities_ft(model, train_word_to_file, doc_info, bert):
     return vocab_embeddings, words
 
 def get_weights_freq(vocab_list, weights):
-    return [len(weights[w]) for w in vocab_list]
+    #pdb.set_trace()
+    vocab_counts = [len(weights[w]) for w in vocab_list]
+    #total = np.sum(vocab_counts)
+    #vocab_counts = [w/total for w in vocab_counts]
+
+    return vocab_counts
+    #return [len(weights[w]) for w in vocab_list]
 
 def get_weights_tfidf(vocab_list, weights):
     return [weights[w] for w in vocab_list]

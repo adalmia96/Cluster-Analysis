@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from sklearn.datasets import fetch_20newsgroups
 from sklearn.model_selection import KFold
 import string
@@ -8,11 +10,11 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 def combine_split_children():
     files = []
     index = 0
-    with open('data/CBTest/data/cbt_train.txt') as fp:
+    with open('data/CBTest/data/cbt_train.txt', encoding='utf-8') as fp:
         data = fp.readlines()
-    with open('data/CBTest/data/cbt_valid.txt') as fp:
+    with open('data/CBTest/data/cbt_valid.txt', encoding='utf-8') as fp:
         data2 = fp.readlines()
-    with open('data/CBTest/data/cbt_test.txt') as fp:
+    with open('data/CBTest/data/cbt_test.txt', encoding='utf-8') as fp:
         data3 = fp.readlines()
     data += "\n"
     data += data2
@@ -61,31 +63,42 @@ def combine_split_children():
 
     return train, valid, test
 
-def create_vocab_and_files_20news(stopwords, type):
+def create_vocab_and_files_20news(stopwords, type, process=False):
     word_to_file = {}
     word_to_file_mult = {}
 
     train_data = fetch_20newsgroups(data_home='./data/', subset=type, remove=('headers', 'footers', 'quotes'))
     files = train_data['data'];
     #doc_to_word = np.zeros
-    return create_vocab(stopwords, files)
+    return create_vocab(stopwords, files, process)
 
-def create_vocab(stopwords, data):
+def create_vocab(stopwords, data, process=False):
+
     word_to_file = {}
     word_to_file_mult = {}
     strip_punct = str.maketrans("", "", string.punctuation)
     strip_digit = str.maketrans("", "", string.digits)
 
+    process_files = []
     for file_num in range(0, len(data)):
         words = data[file_num].lower().split()
         #words = [w.strip() for w in words]
+        proc_file = []
+
         for word in words:
             if "@" in word and "." in word:
                 continue
             word = word.translate(strip_punct)
             word = word.translate(strip_digit)
+
+            # check whether this is important
+            word = word.strip()
+
+
             if word in stopwords:
                 continue
+
+            proc_file.append(word.strip())
 
             if word in word_to_file:
                 word_to_file[word].add(file_num)
@@ -97,6 +110,8 @@ def create_vocab(stopwords, data):
                 word_to_file[word].add(file_num)
                 word_to_file_mult[word].append(file_num)
 
+        process_files.append(proc_file)
+
     for word in list(word_to_file):
         if len(word_to_file[word]) <= 5  or len(word) <= 3:
             word_to_file.pop(word, None)
@@ -104,7 +119,20 @@ def create_vocab(stopwords, data):
     print("Files:" + str(len(data)))
     print("Vocab: " + str(len(word_to_file)))
 
+    if process:
+        vocab = word_to_file.keys()
+        files = []
+        for proc_file in process_files:
+            fil = []
+            for w in proc_file:
+                if w in vocab:
+                    fil.append(w)
+            files.append(" ".join(fil))
+
+        data = files
+
     return word_to_file, word_to_file_mult, data
+
 
 def get_tfidf_score(data, train_vocab, b_word):
     tf_idf_score = {}
@@ -124,7 +152,12 @@ def get_tfidf_score(data, train_vocab, b_word):
 
     return tf_idf_score
 
-
+def topicwords_from_lda(fn):
+    with open(fn, 'r') as f:
+        topicwords = f.readlines()
+    topicwords = [words.strip().split('\t')[2] for words in topicwords]
+    topicwords = [w.split() for w in topicwords]
+    return topicwords
 
 # def create_vocab_and_files_children(stopwords, type):
 #
