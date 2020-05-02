@@ -1,5 +1,6 @@
 from sklearn.datasets import fetch_20newsgroups
 from sklearn.model_selection import KFold
+from nltk.corpus import reuters
 import string
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -47,13 +48,13 @@ def combine_split_children():
     files = np.array(files)
 
 
-    kf = KFold(n_splits=10, shuffle=True, random_state = 0)
+    kf = KFold(n_splits=5, shuffle=True, random_state = 0)
     indices = list(kf.split(files))[0]
 
     train_valid = files[indices[0]]
     test = files[indices[1]]
 
-    kf = KFold(n_splits=9, shuffle=True, random_state = 0)
+    kf = KFold(n_splits=4, shuffle=True, random_state = 0)
     indices = list(kf.split(train_valid))[0]
 
     train = train_valid[indices[0]]
@@ -62,13 +63,18 @@ def combine_split_children():
     return train, valid, test
 
 def create_vocab_and_files_20news(stopwords, type):
-    word_to_file = {}
-    word_to_file_mult = {}
-
     train_data = fetch_20newsgroups(data_home='./data/', subset=type, remove=('headers', 'footers', 'quotes'))
     files = train_data['data'];
     #doc_to_word = np.zeros
     return create_vocab(stopwords, files)
+
+
+def create_vocab_and_files_reuters(stopwords, type):
+    documents = reuters.fileids()
+    id = [d for d in documents if d.startswith(type)]
+    files = [reuters.raw(doc_id) for doc_id in id]
+    return create_vocab(stopwords, files)
+
 
 def create_vocab(stopwords, data):
     word_to_file = {}
@@ -123,49 +129,3 @@ def get_tfidf_score(data, train_vocab, b_word):
             tf_idf_score[word] = total_tf_idf[i]
 
     return tf_idf_score
-
-
-
-# def create_vocab_and_files_children(stopwords, type):
-#
-#     word_to_file = {}
-#     word_to_file_mult = {}
-#     index = 0
-#     strip_punct = str.maketrans("", "", string.punctuation)
-#     strip_digit = str.maketrans("", "", string.digits)
-#
-#     for line in open('data/CBTest/data/cbt_'+type+'.txt', 'r'):
-#         words = line.strip()
-#         if "BOOK_TITLE" in words:
-#             continue
-#         elif  "CHAPTER" in words:
-#             words = words.lower().split()[2:]
-#         else:
-#             words = words.lower().split()
-#
-#
-#         for word in words:
-#             word = word.translate(strip_punct)
-#             word = word.translate(strip_digit)
-#
-#             if word in stopwords:
-#                 continue
-#             if word in word_to_file:
-#                 word_to_file[word].add(int(index/20))
-#                 word_to_file_mult[word].append(int(index/20))
-#             else:
-#                 word_to_file[word]= set()
-#                 word_to_file_mult[word] = []
-#
-#                 word_to_file[word].add(int(index/20))
-#                 word_to_file_mult[word].append(int(index/20))
-#         index+=1
-#
-#     for word in list(word_to_file):
-#         if len(word_to_file[word]) < 5 or len(word) <= 3:
-#             word_to_file.pop(word, None)
-#             word_to_file_mult.pop(word, None)
-#     print(f"Length of {type} files:", int(index/20))
-#     print("Vocab: " + str(len(word_to_file)))
-#
-#     return word_to_file, word_to_file_mult, index
