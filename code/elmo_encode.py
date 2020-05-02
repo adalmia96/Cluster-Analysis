@@ -29,6 +29,7 @@ weight_file \
 = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5"
 
 device=torch.device("cuda:{}".format(args.device) if int(args.device)>=0 else "cpu")
+
 print("using device:", device)
 
 """ Helper Class to Extract Contextualised Word Embeddings from a Document.
@@ -63,6 +64,7 @@ class ElmoWordFromTextEncoder:
         self.strip_digit = str.maketrans("", "", string.digits)
 
     def test_encoder(self):
+        #As per https://github.com/allenai/allennlp/issues/2245
 
         xs = ['Here is some text to encode', 'Some other text to encode']
         xs = [x.split() for x in xs]
@@ -94,7 +96,7 @@ class ElmoWordFromTextEncoder:
             all_vecs.append(vect)
 
         np.savetxt(save_fn, np.vstack(all_vecs), fmt = '%s', delimiter=" ")
-        print(f"{len(all_vecs)} vectors saved to {save_fn}")
+        print(f"{len(all_vecs)} vectors saved to {save_fn} ")
 
 
     def encode_docs(self, docs=[], save_fn="", layer=12):
@@ -106,10 +108,8 @@ class ElmoWordFromTextEncoder:
         start = time.time()
         with torch.no_grad():
             for i, doc in enumerate(docs):
-                if len(docs)<100:
-                    pass
 
-                elif i%(int(len(docs)/100))==0:
+                if i%(int(len(docs)/100))==0:
                     timetaken = np.round(time.time() - start, 1)
                     print(f"{i+1}/{len(docs)}, elapsed(s): {timetaken}")
                     sys.stdout.flush()
@@ -121,22 +121,31 @@ class ElmoWordFromTextEncoder:
 
                 sents = [sent.split() for sent in sents]
                 total_len = sum([len(s) for s in sents])
-                if total_len==0 or len(sents)>50:
+
+                if total_len==0: 
                     continue
 
-                char_ids = batch_to_ids(sents).to(self.device)
-                try:
-                    embeds = self.model(char_ids)
-                except Exception as e:
-                    print("Something went wrong with:", sents)
-                    print("Error message:", e)
-                    sys.exit(1)
-                embeds = embeds['elmo_representations'][0]
+                #if len(sents)>50:
+                #    sents1 = sents[:50]
+                #    sents2 = sents[50:]
 
-                for s, sent in enumerate(sents):
-                    for w, word in enumerate(sents[s]):
-                        emb = np.squeeze(embeds[s, w, :])
-                        self._add_word(word.lower(), emb)
+                while len(sents)>0:
+                    sentss = sents[:50]
+                    char_ids = batch_to_ids(sentss).to(self.device)
+                    try:
+                        embeds = self.model(char_ids)
+                    except Exception as e:
+                        print("Something went wrong with:", sentss)
+                        print("Error message:", e)
+                        sys.exit(1)
+                    embeds = embeds['elmo_representations'][0]
+
+                    for s, sent in enumerate(sentss):
+                        for w, word in enumerate(sentss[s]):
+                            emb = np.squeeze(embeds[s, w, :])
+                            self._add_word(word.lower(), emb)
+
+                    sents = sents[50:]
 
         self.eb_dump(save_fn)
 
@@ -149,7 +158,7 @@ def init():
 
 
     stopwords = "stopwords_en.txt"
-    stopwords = set(line.strip() for line in open("stopwords_en.txt"))
+    #stopwords = set(line.strip() for line in open("stopwords_en.txt"))
     word_to_file, word_to_file_mult, files = preprocess.create_vocab_and_files_20news(stopwords, "train")
     valid_vocab = word_to_file.keys()
     encoder.valid_vocab = valid_vocab
