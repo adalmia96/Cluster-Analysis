@@ -16,6 +16,15 @@ import pdb
 
 # Custom imports
 
+def calc_pmi_matrix(word_intersect, word_in_file, window_total):
+    pmi = np.zeros((len(word_intersect), len(word_intersect)))
+    for i in range(len(word_intersect)):
+        for j in range(i, len(word_intersect)):
+            pmi[i, j] = pmi_wpair(word_intersect[i], word_intersect[j], word_in_file, window_total)
+            pmi[j, i] = pmi[i, j]
+    print(pmi)
+    return pmi
+
 def average_npmi_topics(topic_words, ntopics, word_doc_counts, nfiles):
 
     eps = 10**(-12)

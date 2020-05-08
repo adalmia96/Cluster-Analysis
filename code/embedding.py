@@ -4,6 +4,7 @@ import fasttext
 import numpy as np
 from sklearn import preprocessing
 from sklearn.decomposition import TruncatedSVD
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 def create_id_dict(id2name):
     data = {}
@@ -42,28 +43,23 @@ def create_doc_to_word_emb(word_to_doc, file_num, word_list, dim):
     trun_ftw = TruncatedSVD(n_components=dim).fit_transform(word_to_doc_matrix)
     return trun_ftw
 
-def find_intersect(word_index, vocab, data, files, type, add_doc, bert):
+def find_intersect(word_index, vocab, data, files, type, add_doc):
     if add_doc == "DUP":
-        return find_intersect_mult(word_index, vocab, data, type, bert)
+        return find_intersect_mult(word_index, vocab, data, type)
     elif add_doc == "SVD":
-        intersection, words_index_intersect = find_intersect_unique(word_index, vocab, data, type, bert)
+        intersection, words_index_intersect = find_intersect_unique(word_index, vocab, data, type)
         u = create_doc_to_word_emb(vocab, files, words_index_intersect, 1000)
         u = preprocessing.scale(u)
         #intersection = np.concatenate((intersection, u), axis=1)
         return u, words_index_intersect
     else:
-        return find_intersect_unique(word_index, vocab, data, type, bert)
+        return find_intersect_unique(word_index, vocab, data, type)
 
-
-
-
-
-def find_intersect_unique(word_index, vocab, data, type, bert):
+def find_intersect_unique(word_index, vocab, data, type):
     words = []
     vocab_embeddings = []
 
     intersection = set(word_index.keys()) & set(vocab.keys())
-    intersection = set(bert.keys()) & intersection
     print("Intersection: " + str(len(intersection)))
 
     intersection = np.sort(np.array(list(intersection)))
@@ -78,14 +74,11 @@ def find_intersect_unique(word_index, vocab, data, type, bert):
 
     return vocab_embeddings, words
 
-
-
-def find_intersect_mult(word_index, vocab, data, type, bert):
+def find_intersect_mult(word_index, vocab, data, type):
     words = []
     vocab_embeddings = []
 
     intersection = set(word_index.keys()) & set(vocab.keys())
-    intersection = set(bert.keys()) & intersection
     print("Intersection: " + str(len(intersection)))
 
     intersection = np.sort(np.array(list(intersection)))
@@ -100,12 +93,11 @@ def find_intersect_mult(word_index, vocab, data, type, bert):
     vocab_embeddings = np.array(vocab_embeddings)
     return vocab_embeddings, words
 
-def create_entities_ft(model, train_word_to_file, doc_info, bert):
+def create_entities_ft(model, train_word_to_file, doc_info):
     #print("getting fasttext embeddings..")
     vocab_embeddings = []
     words = []
-    intersection = set(train_word_to_file.keys()) & set(bert.keys())
-
+    intersection = set(train_word_to_file.keys())
     for word in intersection:
         if doc_info:
             for i in train_word_to_file[word]:
@@ -118,22 +110,39 @@ def create_entities_ft(model, train_word_to_file, doc_info, bert):
     #print("complete..")
     return vocab_embeddings, words
 
-def get_weights_freq(vocab_list, weights):
-    return [len(weights[w]) for w in vocab_list]
 
+
+def get_weights_tf(vocab_list, weights):
+    return [len(weights[w]) for w in vocab_list]
 def get_weights_tfidf(vocab_list, weights):
     return [weights[w] for w in vocab_list]
-
 def get_weights_tfdf(vocab_list, word_file_count, files_num):
     count = np.array(get_weights_freq(vocab_list, word_file_count))
-    tf = count
+    tf = count/np.sum(count)
 
     df = np.array([len(np.unique(word_file_count[w])) for w in vocab_list])
-    df = df
+    df = df/files_num
 
     weights = tf * df
+    print(weights.shape)
+
     tfdf = {}
     for i, w in enumerate(vocab_list):
         tfdf[w]=weights[i]
 
     return weights, tfdf
+def get_tfidf_score(data, train_vocab):
+    tf_idf_score = {}
+
+    tfidf_vectorizer=TfidfVectorizer(use_idf=True)
+    tfidf_vectorizer_vectors=tfidf_vectorizer.fit_transform(data)
+
+    words = tfidf_vectorizer.get_feature_names()
+    total_tf_idf = tfidf_vectorizer_vectors.toarray().sum(axis=0)
+
+    vocab = set(words) & set(train_vocab.keys())
+    for i, word in enumerate(words):
+        if word in vocab:
+            tf_idf_score[word] = total_tf_idf[i]
+
+    return tf_idf_score

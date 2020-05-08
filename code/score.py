@@ -17,91 +17,89 @@ NSEEDS = 5
 
 def main():
     args = parse_args()
-    #combine_split_children()
+
     stopwords = set(line.strip() for line in open('stopwords_en.txt'))
-    #train_word_to_file, train_w_to_f_mult, files = create_vocab_and_files_20news(stopwords, "train")
-    train_word_to_file, train_w_to_f_mult, files = create_vocab_and_files_reuters(stopwords, "train")
+
+    vocab = create_global_vocab(args.vocab)
+    train_word_to_file, train_w_to_f_mult, files = create_vocab_and_files(stopwords, args.dataset, args.preprocess, "train", vocab)
     files_num = len(files)
 
-    #train_word_to_file, train_w_to_f_mult, files_num = create_vocab_and_files_children(stopwords, "train")
     intersection = None
     words_index_intersect = None
 
-    data, bword_index = read_entity_file("models/jose_300d.txt", args.id2name, train_word_to_file)
-    tf_idf = get_tfidf_score(files, train_word_to_file, bword_index)
+
+    tf_idf = get_tfidf_score(files, train_word_to_file)
+
 
     if args.entities == "word2vec":
         model = gensim.models.KeyedVectors.load_word2vec_format('models/GoogleNews-vectors-negative300.bin', binary=True)
-        intersection, words_index_intersect  = find_intersect(model.vocab,  train_w_to_f_mult, model, files_num, args.entities, args.doc_info, bword_index)
+        intersection, words_index_intersect  = find_intersect(model.vocab,  train_w_to_f_mult, model, files_num, args.entities, args.doc_info)
     elif args.entities == "fasttext":
         ft = fasttext.load_model('models/wiki.en.bin')
-        intersection, words_index_intersect = create_entities_ft(ft, train_w_to_f_mult, args.doc_info, bword_index)
+        intersection, words_index_intersect = create_entities_ft(ft, train_w_to_f_mult, args.doc_info)
         print(intersection.shape)
-
     elif args.entities == "KG":
         data, word_index = read_entity_file(args.entities_file, args.id2name, train_word_to_file)
-        intersection, words_index_intersect = find_intersect(word_index, train_w_to_f_mult, data, files_num, args.entities, args.doc_info, bword_index)
+        intersection, words_index_intersect = find_intersect(word_index, train_w_to_f_mult, data, files_num, args.entities, args.doc_info)
+
+
+
 
     if args.use_dims:
         intersection = PCA_dim_reduction(intersection, args.use_dims)
-        #intersection = TSNE_dim_reduction(intersection, args.use_dims)
 
-    weights , tfdf = get_weights_tfdf(words_index_intersect, train_w_to_f_mult, files_num)
+    #weights , tfdf = get_weights_tfdf(words_index_intersect, train_w_to_f_mult, files_num)
     #weights = None
+
     if args.doc_info == "WGT":
+        weights  = get_weights_tf(words_index_intersect, train_w_to_f_mult)
 
-        weights  = get_weights_tfidf(words_index_intersect, train_w_to_f_mult)
 
-    #weights = get_weights_tfidf(words_index_intersect, tf_idf)
-    #
-
-    test_word_to_file, test_word_to_file_mult, test_files = create_vocab_and_files_reuters(stopwords, "test")
-    #test_word_to_file, test_word_to_file_mult, test_files = create_vocab_and_files_20news(stopwords, "test")
+    test_word_to_file, test_word_to_file_mult, test_files = create_vocab_and_files(stopwords, args.dataset,args.preprocess, "test", vocab)
     test_files_num = len(test_files)
-    #test_word_to_file, test_word_to_file_mult, test_files_num = create_vocab_and_files_children(stopwords, "combined")
 
     npmis = []
     labels = None
     top_k = None
-    gmm = None
-    n_p = None
     pmi_mat = None
     #pmi_mat = calc_pmi_matrix(words_index_intersect, train_word_to_file, files_num)
+
     #eps = np.arange(4.73, 4.75, 0.005)
     for rand in range(NSEEDS):
-        #print("Eps:" + str(rand))
+        #Distance Based
         if args.clustering_algo == "KMeans":
-            labels, top_k  = KMeans_model(intersection, words_index_intersect, args.topics, args.rerank, rand, weights)
+            labels, top_k  = KMeans_model(intersection, words_index_intersect, args.num_topics, args.rerank, rand, weights)
         elif args.clustering_algo == "SPKMeans":
-            labels, top_k  = SphericalKMeans_model(intersection, words_index_intersect, args.topics, args.rerank, rand, weights)
-        elif args.clustering_algo == "Spectral":
-            labels, top_k  = SpectralClustering_Model(intersection, args.topics, rand,  pmi_mat)
-        elif args.clustering_algo == "KMedoids":
-            labels, top_k  = KMedoids_model(intersection,  words_index_intersect, args.topics, rand)
-        elif args.clustering_algo == "Agglo":
-            labels, top_k  = Agglo_model(intersection, args.topics, rand)
-        elif args.clustering_algo == "DBSCAN":
-            print(k)
-            labels, top_k  = DBSCAN_model(intersection_unique,  k)
+            labels, top_k  = SphericalKMeans_model(intersection, words_index_intersect, args.num_topics, args.rerank, rand, weights)
         elif args.clustering_algo == "GMM":
-            # top_k are indexes of the vocabulary
-            labels, top_k, gmm  = GMM_model(intersection, words_index_intersect, args.topics, args.rerank, rand)
+            labels, top_k = GMM_model(intersection, words_index_intersect, args.num_topics, args.rerank, rand)
+        elif args.clustering_algo == "KMedoids":
+            labels, top_k  = KMedoids_model(intersection,  words_index_intersect,  args.num_topics, rand)
         elif args.clustering_algo == "VMFM":
-            # top_k are indexes of the vocabulary
-            labels, top_k = VonMisesFisherMixture_Model(intersection, args.topics, rand)
+            labels, top_k = VonMisesFisherMixture_Model(intersection, args.num_topics, rand)
+
+        #Affinity matrix based
+        elif args.clustering_algo == "DBSCAN":
+            k=5.8
+            labels, top_k  = DBSCAN_model(intersection,k)
+        elif args.clustering_algo == "Agglo":
+            labels, top_k  = Agglo_model(intersection, args.num_topics, rand)
+        elif args.clustering_algo == "Spectral":
+            labels, top_k  = SpectralClustering_Model(intersection,args.num_topics, rand,  pmi_mat)
 
         if args.clustering_algo == 'from_file':
             with open('bert_topics.txt', 'r') as f:
                 top_k_words = f.readlines()
             top_k_words = [tw.strip().replace(',', '').split() for tw in top_k_words]
+
         elif args.clustering_algo == 'LDA':
             with open(args.topics_file, 'r') as f:
                 top_k_words = f.readlines()
             top_k_words = [tw.strip().replace(',', '').split() for tw in top_k_words]
             for i, top_k in enumerate(top_k_words):
                 top_k_words[i] = top_k_words[i][2:12]
-        else:
 
+        else:
             bins, top_k_words = sort(labels, top_k,  words_index_intersect)
             if args.rerank=="freq":
                 top_k_words =  rank_freq(top_k_words, train_w_to_f_mult)
@@ -163,81 +161,29 @@ def print_top_k(top_k_bins, name, type):
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(__doc__)
-    parser.add_argument("--entities", type=str, required=True, choices=["word2vec", "fasttext", "KG"])
+    parser.add_argument("--entities", type=str, choices=["word2vec", "fasttext", "KG"])
+    parser.add_argument( "--entities_file", type=str, help="entity file")
+
     parser.add_argument("--clustering_algo", type=str, required=True, choices=["KMeans", "SPKMeans", "GMM", "KMedoids","Agglo","DBSCAN","Spectral","VMFM",
         'from_file', 'LDA'])
-    parser.add_argument( "--entities_file", type=str, help="entity file")
-    parser.add_argument( "--topics_file", type=str, help="topics file")
-    parser.add_argument('--id2name', type=Path, help="id2name file")
-    parser.add_argument('--use_dims', type=int)
-    parser.add_argument('--topics', type=int, default=20)
 
+    parser.add_argument( "--topics_file", type=str, help="topics file")
+
+    parser.add_argument('--use_dims', type=int)
+    parser.add_argument('--num_topics', type=int, default=20)
     parser.add_argument("--doc_info", type=str, choices=["SVD", "DUP", "WGT"])
-    parser.add_argument("--rerank", type=str, choices=["freq", "tfidf", "tfdf"])
+    parser.add_argument("--rerank", type=str, choices=["tf", "tfidf", "tfdf"])
+
+    parser.add_argument('--id2name', type=Path, help="id2name file")
+
+    parser.add_argument("--dataset", type=str, required=True, choices=["fetch20", "children", "reuters"])
+    parser.add_argument("--preprocess", type=bool, default=False)
+    parser.add_argument("--vocab", required=True,  nargs='+', default=[])
+
+
     args = parser.parse_args()
     return args
 
-def calc_pmi_matrix(word_intersect, word_in_file, window_total):
-    pmi = np.zeros((len(word_intersect), len(word_intersect)))
-    for i in range(len(word_intersect)):
-        for j in range(i, len(word_intersect)):
-            pmi[i, j] = pmi_wpair(word_intersect[i], word_intersect[j], word_in_file, window_total)
-            pmi[j, i] = pmi[i, j]
-    print(pmi)
-    return pmi
-
-"""
-Deprecated; See npmi.py instead
-def pmi_wpair(word1, word2, word_in_file, window_total):
-    eps = 10**(-12)
-    w1_count = 0
-    w2_count = 0
-    combined_count = 0
-    if word1 in word_in_file and word2 in word_in_file:
-        combined_count = len(set(word_in_file[word1]) & set(word_in_file[word2]))
-        w1_count = len(word_in_file.get(word1, []))
-        w2_count = len(word_in_file.get(word2, []))
-    result = np.log(((float(combined_count)*float(window_total)) + eps)/ \
-                (float(w1_count*w2_count)+eps))
-    return result
-
-
-def npmi_wpair(word1, word2, word_in_file, window_total):
-    eps = 10**(-12)
-    w1_count = 0
-    w2_count = 0
-    combined_count = 0
-    if word1 in word_in_file and word2 in word_in_file:
-        combined_count = len(set(word_in_file[word1]) & set(word_in_file[word2]))
-        w1_count = len(word_in_file.get(word1, []))
-        w2_count = len(word_in_file.get(word2, []))
-    result = np.log(((float(combined_count)*float(window_total)) + eps)/ \
-                (float(w1_count*w2_count)+eps))
-    result = result / (-1.0*np.log(float(combined_count)/(window_total) + eps))
-    return result
-
-def calc_topic_coherence(topic_words, word_in_file, files_num):
-    topic_assoc = []
-    for i in range(0, len(topic_words)-1):
-        w1 = topic_words[i]
-        for j in range(i+1, len(topic_words)):
-            w2 = topic_words[j]
-            #print(w1 + " " + w2 + str(npmi_wpair(w1, w2, word_in_file, files_num)))
-    #        if w1 != w2:
-            topic_assoc.append(npmi_wpair(w1, w2, word_in_file, files_num))
-    if len(topic_assoc)==0:
-        pdb.set_trace()
-    return float(sum(topic_assoc))/len(topic_assoc)
-
-def get_npmi(top_k_bins, word_in_file, files_num):
-    ntopics = len(top_k_bins)
-    npmi_scores = np.zeros(ntopics)
-    for k in range(ntopics):
-        npmi_score = calc_topic_coherence(top_k_bins[k], word_in_file, files_num)
-        print(np.around(npmi_score, 5), " ".join(top_k_bins[k]))
-        npmi_scores[k] = np.around(npmi_score, 5)
-    return np.mean(npmi_scores), npmi_scores
-"""
 
 
 if __name__ == "__main__":

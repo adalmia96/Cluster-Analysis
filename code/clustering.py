@@ -38,39 +38,30 @@ def TSNE_dim_reduction(intersection, dim):
 def Agglo_model(vocab_embeddings, topics, rand):
     agglo = AgglomerativeClustering(n_clusters=topics).fit(vocab_embeddings)
     m_clusters = agglo.labels_
-    return m_clusters, find_top_10_words_mean(m_clusters, vocab_embeddings)
+    return m_clusters, find_words_for_cluster(m_clusters, topics)
 
-def DBSCAN_model(vocab_embeddings, e):
+def DBSCAN_model(vocab_embeddings, e=0.5):
     dbscan = DBSCAN(eps=e, min_samples=10).fit(vocab_embeddings)
     m_clusters = dbscan.labels_
-    print(np.unique(m_clusters))
-    print(dbscan.components_.shape)
-    indices = []
+    clusters = len(np.unique(m_clusters[m_clusters>= 0]))
+    return m_clusters, find_words_for_cluster(m_clusters, clusters)
 
-    for i in range(len(np.unique(m_clusters))-1):
-        data_idx_within_i_cluster = [ idx for idx, clu_num in enumerate(m_clusters) if clu_num == i ]
-        one_cluster_tf_matrix = np.zeros((len(data_idx_within_i_cluster) , vocab_embeddings.shape[1]))
+def SpectralClustering_Model(vocab_embeddings, topics, rand, pmi):
+    precomp = rbf_kernel(vocab_embeddings)
 
-        for row_num, data_idx in enumerate(data_idx_within_i_cluster):
-            one_row = vocab_embeddings[data_idx]
-            one_cluster_tf_matrix[row_num] = one_row
+    #print(precomp)
+    #pmax, pmin = pmi.max(), pmi.min()
+    #pmi = (pmi - pmin)/(pmax - pmin)
 
-        center_vec = np.mean(one_cluster_tf_matrix, axis=0)
+    #precomp = precomp * pmi
+    #print(precomp)
 
-        dist_X =  np.sum((one_cluster_tf_matrix - center_vec)**2, axis = 1)
+    #nearest_neighbors
+    #precomputed
+    SC = SpectralClustering(n_clusters=topics, random_state=rand, affinity = "nearest_neighbors").fit(vocab_embeddings)
+    m_clusters = SC.labels_
 
-        #dist_X = np.sum(pairwise_distances(one_cluster_tf_matrix), axis = 1)
-        topk = min(10, len(data_idx_within_i_cluster))
-        #print(dist_X.argsort()[-topk:][::-1])
-
-        topk_vals = dist_X.argsort()[:topk].astype(int)
-        ind = []
-        for i in topk_vals:
-            ind.append(data_idx_within_i_cluster[i])
-
-        indices.append(ind)
-    print(indices)
-    return m_clusters, indices
+    return m_clusters, find_words_for_cluster(m_clusters, topics)
 
 def KMedoids_model(vocab_embeddings, vocab, topics,  rand):
     kmedoids = KMedoids(n_clusters=topics, random_state=rand).fit(vocab_embeddings)
@@ -80,7 +71,7 @@ def KMedoids_model(vocab_embeddings, vocab, topics,  rand):
 
     for i in range(20):
         topk_vals = sort_closest_center(centers[i], m_clusters, vocab_embeddings, i)
-        indices.append(find_top_k_words(10, topk_vals, vocab))
+        indices.append(find_top_k_words(100, topk_vals, vocab))
 
     return m_clusters, indices
 
@@ -94,7 +85,7 @@ def KMeans_model(vocab_embeddings, vocab, topics, rerank, rand, weights):
     for i in range(topics):
         topk_vals = sort_closest_center(centers[i], m_clusters, vocab_embeddings, i)
         if rerank:
-            indices.append(find_top_k_words(100, topk_vals, vocab))
+            indices.append(find_top_k_words(50, topk_vals, vocab))
         else:
             indices.append(find_top_k_words(10, topk_vals, vocab))
         #print(indices)
@@ -144,23 +135,6 @@ def VonMisesFisherMixture_Model(vocab_embeddings, topics, rand):
     print(indices)
     return vmf_soft.predict(vocab_embeddings), indices
 
-def SpectralClustering_Model(vocab_embeddings, topics, rand, pmi):
-    precomp = rbf_kernel(vocab_embeddings)
-
-    #print(precomp)
-    #pmax, pmin = pmi.max(), pmi.min()
-    #pmi = (pmi - pmin)/(pmax - pmin)
-
-    #precomp = precomp * pmi
-    #print(precomp)
-
-    #nearest_neighbors
-    #precomputed
-    SC = SpectralClustering(n_clusters=topics, random_state=rand, affinity = "nearest_neighbors").fit(vocab_embeddings)
-    m_clusters = SC.labels_
-
-    return m_clusters, find_top_10_words_mean(m_clusters, vocab_embeddings)
-
 def sort_closest_center(center_vec, m_clusters,vocab_embeddings, c_ind):
     data_idx_within_i_cluster = np.array([ idx for idx, clu_num in enumerate(m_clusters) if clu_num == c_ind ])
     one_cluster_tf_matrix = np.zeros((len(data_idx_within_i_cluster) , center_vec.shape[0]))
@@ -208,6 +182,8 @@ def find_top_k_words(k, top_vals, vocab):
                 break
     return ind
 
+
+
 def rank_freq(top_k_words, train_w_to_f_mult):
     top_10_words = []
     for words in top_k_words:
@@ -228,26 +204,16 @@ def rank_td_idf(top_k_words, tf_idf):
     return top_10_words
 
 
-def find_top_10_words_mean(m_clusters, vocab_embeddings, clusters):
+
+
+
+def find_words_for_cluster(m_clusters,  clusters):
     indices = []
-
-    for i in range(clusters):
+    for i in range(0, clusters):
+        if i == -1:
+            continue
         data_idx_within_i_cluster = [ idx for idx, clu_num in enumerate(m_clusters) if clu_num == i ]
-        one_cluster_tf_matrix = np.zeros((len(data_idx_within_i_cluster) , vocab_embeddings.shape[1]))
-
-        for row_num, data_idx in enumerate(data_idx_within_i_cluster):
-            one_row = vocab_embeddings[data_idx]
-            one_cluster_tf_matrix[row_num] = one_row
-        center_vec = np.mean(one_cluster_tf_matrix, axis=0)
-
-        dist_X =  np.sum((one_cluster_tf_matrix - center_vec)**2, axis = 1)
-        topk = min(10, len(data_idx_within_i_cluster))
-        topk_vals = dist_X.argsort()[:topk].astype(int)
-        ind = []
-        for i in topk_vals:
-            ind.append(data_idx_within_i_cluster[i])
-
-        indices.append(ind)
+        indices.append(data_idx_within_i_cluster)
     return indices
 
 def visualize(intersection):
