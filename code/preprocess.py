@@ -6,8 +6,9 @@ import numpy as np
 
 
 def create_global_vocab(vocab_files):
-    vocab_list = set(line.strip() for line in open(vocab_files[0]))
+    vocab_list = set(line.split()[0] for line in open(vocab_files[0]))
     for vocab in vocab_files:
+        
         vocab_list = vocab_list & set(line.split()[0] for line in open(vocab))
     return vocab_list
 
@@ -113,6 +114,7 @@ def create_vocab_no_preprocess(data, vocab):
 
     print("Files:" + str(len(data)))
     print("Vocab: " + str(len(word_to_file)))
+    return word_to_file, word_to_file_mult, data
 
 def create_vocab_preprocess(stopwords, data, vocab):
     word_to_file = {}

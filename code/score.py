@@ -21,6 +21,7 @@ def main():
     stopwords = set(line.strip() for line in open('stopwords_en.txt'))
 
     vocab = create_global_vocab(args.vocab)
+    
     train_word_to_file, train_w_to_f_mult, files = create_vocab_and_files(stopwords, args.dataset, args.preprocess, "train", vocab)
     files_num = len(files)
 
@@ -101,7 +102,7 @@ def main():
 
         else:
             bins, top_k_words = sort(labels, top_k,  words_index_intersect)
-            if args.rerank=="freq":
+            if args.rerank=="tf":
                 top_k_words =  rank_freq(top_k_words, train_w_to_f_mult)
             elif args.rerank=="tfidf":
                 top_k_words = rank_td_idf(top_k_words, tf_idf)
