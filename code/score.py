@@ -19,7 +19,8 @@ def main():
     args = parse_args()
     #combine_split_children()
     stopwords = set(line.strip() for line in open('stopwords_en.txt'))
-    train_word_to_file, train_w_to_f_mult, files = create_vocab_and_files_20news(stopwords, "train")
+    #train_word_to_file, train_w_to_f_mult, files = create_vocab_and_files_20news(stopwords, "train")
+    train_word_to_file, train_w_to_f_mult, files = create_vocab_and_files_reuters(stopwords, "train")
     files_num = len(files)
     print("len vocab size:", len(train_word_to_file.keys()))
 
@@ -27,9 +28,7 @@ def main():
     intersection = None
     words_index_intersect = None
 
-    #data, bword_index = read_entity_file("models/bert_embeddings-layer12-average.txt", args.id2name, train_word_to_file)
-    data, bword_index = read_entity_file("embeds/20NG-bert-layer12-average.txt.swr",
-            args.id2name, train_word_to_file)
+    data, bword_index = read_entity_file("models/jose_300d.txt", args.id2name, train_word_to_file)
 
     tf_idf = get_tfidf_score(files, train_word_to_file, bword_index)
 
@@ -49,17 +48,17 @@ def main():
         intersection = PCA_dim_reduction(intersection, args.use_dims)
         #intersection = TSNE_dim_reduction(intersection, args.use_dims)
 
-    _ , tfdf = get_weights_tfdf(words_index_intersect, train_w_to_f_mult, files_num)
-    weights = None
+    weights , tfdf = get_weights_tfdf(words_index_intersect, train_w_to_f_mult, files_num)
+    #weights = None
     if args.doc_info == "WGT":
 
-        weights = get_weights_freq(words_index_intersect, train_w_to_f_mult)
+        weights  = get_weights_tfidf(words_index_intersect, train_w_to_f_mult)
 
     #weights = get_weights_tfidf(words_index_intersect, tf_idf)
     #
 
-
-    test_word_to_file, test_word_to_file_mult, test_files = create_vocab_and_files_20news(stopwords, "test")
+    test_word_to_file, test_word_to_file_mult, test_files = create_vocab_and_files_reuters(stopwords, "test")
+    #test_word_to_file, test_word_to_file_mult, test_files = create_vocab_and_files_20news(stopwords, "test")
     test_files_num = len(test_files)
     #test_word_to_file, test_word_to_file_mult, test_files_num = create_vocab_and_files_children(stopwords, "combined")
 

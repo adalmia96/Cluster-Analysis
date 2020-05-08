@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Author: Suzanna Sia
+
+CUDA=`free-gpu`
+export CUDA_VISIBLE_DEVICES=$CUDA
+CUDA=0
+
+SAVEDIR=/export/c12/ssia/shared/Cluster-Analysis/embeds
+
+DATA=cb
+layer=12
+use_sw=0
+use_full_vocab=1
+agg_by=average
+
+#for DATA in 20NG cb reuters; do
+for DATA in cb; do
+
+  SAVEFN=$SAVEDIR/${DATA}-bert-layer${layer}-${agg_by}.full_vocab
+
+  python code/bert_encode.py --nlayer $layer --device $CUDA --data $DATA --save_fn $SAVEFN \
+--use_stopwords $use_sw --use_full_vocab $use_full_vocab --agg_by $agg_by
+
+done

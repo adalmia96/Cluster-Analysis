@@ -2,19 +2,22 @@
 
 from sklearn.datasets import fetch_20newsgroups
 from sklearn.model_selection import KFold
+from nltk.corpus import reuters
 import string
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 
+import os
+DATADIR="/export/c12/ssia/shared/Cluster-Analysis/data"
 
 def combine_split_children():
     files = []
     index = 0
-    with open('data/CBTest/data/cbt_train.txt', encoding='utf-8') as fp:
+    with open(os.path.join(DATADIR, 'CBTest/data/cbt_train.txt'), encoding='utf-8') as fp:
         data = fp.readlines()
-    with open('data/CBTest/data/cbt_valid.txt', encoding='utf-8') as fp:
+    with open(os.path.join(DATADIR, 'CBTest/data/cbt_valid.txt'), encoding='utf-8') as fp:
         data2 = fp.readlines()
-    with open('data/CBTest/data/cbt_test.txt', encoding='utf-8') as fp:
+    with open(os.path.join(DATADIR, 'CBTest/data/cbt_test.txt'), encoding='utf-8') as fp:
         data3 = fp.readlines()
     data += "\n"
     data += data2
@@ -49,13 +52,13 @@ def combine_split_children():
     files = np.array(files)
 
 
-    kf = KFold(n_splits=10, shuffle=True, random_state = 0)
+    kf = KFold(n_splits=5, shuffle=True, random_state = 0)
     indices = list(kf.split(files))[0]
 
     train_valid = files[indices[0]]
     test = files[indices[1]]
 
-    kf = KFold(n_splits=9, shuffle=True, random_state = 0)
+    kf = KFold(n_splits=4, shuffle=True, random_state = 0)
     indices = list(kf.split(train_valid))[0]
 
     train = train_valid[indices[0]]
@@ -63,17 +66,42 @@ def combine_split_children():
 
     return train, valid, test
 
-def create_vocab_and_files_20news(stopwords, type, process=False):
-    word_to_file = {}
-    word_to_file_mult = {}
-
+def create_vocab_and_files_20news(stopwords, type):
     train_data = fetch_20newsgroups(data_home='./data/', subset=type, remove=('headers', 'footers', 'quotes'))
     files = train_data['data'];
     #doc_to_word = np.zeros
-    return create_vocab(stopwords, files, process)
+    return create_vocab(stopwords, files)
 
-def create_vocab(stopwords, data, process=False):
 
+def create_vocab_and_files_reuters(stopwords, type):
+    documents = reuters.fileids()
+    id = [d for d in documents if d.startswith(type)]
+    files = [reuters.raw(doc_id) for doc_id in id]
+    return create_vocab(stopwords, files)
+
+def get_dataset(dataset="20NG", stopwords=[], type="train"):
+    if dataset == "20NG":
+        word_to_file, mult_word_to_file, files = create_vocab_and_files_20news(stopwords, "train")
+
+    if dataset=="cb":
+        train, valid, test = combine_split_children()
+        if type=="train":
+            data = train
+        elif type=="valid":
+            data = valid
+        elif type=="test":
+            data = test
+
+        word_to_file, mult_word_to_file, files = create_vocab(stopwords, data)
+
+    if dataset == "reuters":
+        word_to_file, mult_word_to_file, files = create_vocab_and_files_reuters(stopwords, "train")
+
+    return word_to_file, mult_word_to_file, files
+
+
+def create_vocab(stopwords, data, process_data=False):
+    # process_data=True returns processed data files, otherwise its just the raw data
     word_to_file = {}
     word_to_file_mult = {}
     strip_punct = str.maketrans("", "", string.punctuation)
@@ -119,7 +147,7 @@ def create_vocab(stopwords, data, process=False):
     print("Files:" + str(len(data)))
     print("Vocab: " + str(len(word_to_file)))
 
-    if process:
+    if process_data:
         vocab = word_to_file.keys()
         files = []
         for proc_file in process_files:
@@ -159,46 +187,3 @@ def topicwords_from_lda(fn):
     topicwords = [w.split() for w in topicwords]
     return topicwords
 
-# def create_vocab_and_files_children(stopwords, type):
-#
-#     word_to_file = {}
-#     word_to_file_mult = {}
-#     index = 0
-#     strip_punct = str.maketrans("", "", string.punctuation)
-#     strip_digit = str.maketrans("", "", string.digits)
-#
-#     for line in open('data/CBTest/data/cbt_'+type+'.txt', 'r'):
-#         words = line.strip()
-#         if "BOOK_TITLE" in words:
-#             continue
-#         elif  "CHAPTER" in words:
-#             words = words.lower().split()[2:]
-#         else:
-#             words = words.lower().split()
-#
-#
-#         for word in words:
-#             word = word.translate(strip_punct)
-#             word = word.translate(strip_digit)
-#
-#             if word in stopwords:
-#                 continue
-#             if word in word_to_file:
-#                 word_to_file[word].add(int(index/20))
-#                 word_to_file_mult[word].append(int(index/20))
-#             else:
-#                 word_to_file[word]= set()
-#                 word_to_file_mult[word] = []
-#
-#                 word_to_file[word].add(int(index/20))
-#                 word_to_file_mult[word].append(int(index/20))
-#         index+=1
-#
-#     for word in list(word_to_file):
-#         if len(word_to_file[word]) < 5 or len(word) <= 3:
-#             word_to_file.pop(word, None)
-#             word_to_file_mult.pop(word, None)
-#     print(f"Length of {type} files:", int(index/20))
-#     print("Vocab: " + str(len(word_to_file)))
-#
-#     return word_to_file, word_to_file_mult, index

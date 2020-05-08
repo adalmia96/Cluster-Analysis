@@ -10,6 +10,10 @@ import math
 import os, sys
 import nltk.data
 import string
+import locale
+locale.setlocale(locale.LC_ALL, 'en_US.utf-8')
+
+
 # argparser
 import time
 import argparse
@@ -19,6 +23,8 @@ argparser.add_argument('--save_fn', default="", type=str, help="filename to save
 argparser.add_argument('--agg_by', default="firstword", type=str, help="method for aggregating compound words")
 argparser.add_argument('--device', default=0, required=False)
 argparser.add_argument('--data', default="20NG", required=False)
+argparser.add_argument('--use_stopwords', default=0, type=int, required=False, help="1 for incl stopwords")
+argparser.add_argument('--use_full_vocab', default=0, type=int, required=False, help="1 for incl stopwords")
 args = argparser.parse_args()
 
 # Custom imports
@@ -54,10 +60,18 @@ class BertWordFromTextEncoder:
         self.w2vc = {} #counts
         self.compounds = set()
         self.agg_by = ""
+        self.use_full_vocab = False
 
         if valid_vocab is None:
             print("Provide list of vocab words.")
             sys.exit(1)
+
+        elif valid_vocab == -1:
+            self.use_full_vocab = True
+            print("Extract embeddings with full vocab")
+
+        else:
+            print(f"Extract embeddings with restricted vocab, {len(valid_vocab)} words")
 
         self.valid_vocab = valid_vocab
 
@@ -94,29 +108,36 @@ class BertWordFromTextEncoder:
 
         emb = emb.cpu().detach().numpy()
 
-        if word in self.valid_vocab:
-            if len(compound_ixs)>1:
-                self.compounds.add(word)
+        if self.use_full_vocab:
+            pass
+        else:
+            if word not in self.valid_vocab:
+                return
 
-            if word in self.w2vb:
-                self.w2vb[word] += emb
-                self.w2vc[word] += 1
-            else:
-                self.w2vb[word] = emb
-                self.w2vc[word] = 1
+        if len(compound_ixs)>1:
+            self.compounds.add(word)
+
+        if word in self.w2vb:
+            self.w2vb[word] += emb
+            self.w2vc[word] += 1
+        else:
+            self.w2vb[word] = emb
+            self.w2vc[word] = 1
 
     def eb_dump(self, save_fn):
         print("saving embeddings")
 
         all_vecs = []
         for word in self.w2vb:
-            mean_vector = np.around(self.w2vb[word]/self.w2vc[word], 5)
+            #word = word.encode('utf-8', 'ignore').decode('utf-8')
+
+            mean_vector = np.around(self.w2vb[word]/self.w2vc[word], 8)
             vect = np.append(word, mean_vector)
             all_vecs.append(vect)
 
         #np.savetxt(f'embeds/bert_embeddings{i}-layer{args.layer}.txt', all_vecs, fmt = '%s', delimiter=" ")
 
-        np.savetxt(save_fn, np.vstack(all_vecs), fmt = '%s', delimiter=" ")
+        np.savetxt(save_fn, np.vstack(all_vecs), fmt = '%s', delimiter=" ", encoding='utf-8')
         print(f"{len(all_vecs)} vectors saved to {save_fn}")
         print(f"{len(self.compounds)} compound words saved to: compound_words.txt")
         
@@ -187,19 +208,18 @@ def init():
     """ Sample script """
 
     import preprocess
-    stopwords = set(line.strip() for line in open("stopwords_en.txt", encoding='utf-8'))
+    if args.use_stopwords==1:
+        stopwords = set(line.strip() for line in open("stopwords_en.txt", encoding='utf-8'))
+    else:
+        stopwords = set()
+
     word_to_file = {}
-
-    if args.data == "20NG":
-        word_to_file, word_to_file_mult, files = preprocess.create_vocab_and_files_20news(stopwords, "train")
-
-    elif args.data == "cb":
-        train, valid, test = preprocess.combine_split_children()
-        word_to_file, word_to_file_mult, files = preprocess.create_vocab(stopwords, train)
-
-    valid_vocab = word_to_file.keys()
-    print("vocab size:", len(valid_vocab))
-
+    word_to_file, _, files = preprocess.get_dataset(dataset=args.data, type="train")
+    
+    if args.use_full_vocab == 1:
+        valid_vocab = -1
+    else:
+        valid_vocab = word_to_file.keys()
 
     ### this is what you care about
     encoder = BertWordFromTextEncoder(valid_vocab=valid_vocab)
