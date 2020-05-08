@@ -8,7 +8,7 @@ import numpy as np
 def create_global_vocab(vocab_files):
     vocab_list = set(line.strip() for line in open(vocab_files[0]))
     for vocab in vocab_files:
-        vocab_list = vocab_list & set(line.strip() for line in open(vocab))
+        vocab_list = vocab_list & set(line.split()[0] for line in open(vocab))
     return vocab_list
 
 
@@ -97,7 +97,6 @@ def create_vocab_no_preprocess(data, vocab):
         words = data[file_num].lower().translate(strip_punct).translate(strip_digit)
 
         words = words.split()
-        print(words)
         for word in words:
             if word not in vocab:
                 continue
