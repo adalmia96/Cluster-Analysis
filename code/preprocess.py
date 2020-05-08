@@ -8,7 +8,7 @@ import numpy as np
 def create_global_vocab(vocab_files):
     vocab_list = set(line.split()[0] for line in open(vocab_files[0]))
     for vocab in vocab_files:
-        
+
         vocab_list = vocab_list & set(line.split()[0] for line in open(vocab))
     return vocab_list
 
@@ -88,7 +88,7 @@ def create_files_children(type):
     return files
 
 
-def create_vocab_no_preprocess(data, vocab):
+def create_vocab_no_preprocess(stopwords, data, vocab):
     word_to_file = {}
     word_to_file_mult = {}
     strip_punct = str.maketrans(string.punctuation, ' '*len(string.punctuation))
@@ -99,7 +99,7 @@ def create_vocab_no_preprocess(data, vocab):
 
         words = words.split()
         for word in words:
-            if word not in vocab:
+            if word in stopwords or word not in vocab:
                 continue
 
             if word in word_to_file:
@@ -164,4 +164,4 @@ def create_vocab_and_files(stopwords, dataset, preprocess, type, vocab):
     if preprocess:
         return create_vocab_preprocess(stopwords, data, vocab)
     else:
-        return create_vocab_no_preprocess(data, vocab)
+        return create_vocab_no_preprocess(stopwords, data, vocab)
