@@ -13,7 +13,7 @@ def init():
     strip_punct = str.maketrans(string.punctuation, ' '*len(string.punctuation))
     strip_digit = str.maketrans("", "", string.digits)
 
-    vocab = ["embeds/20NG-elmo.full_vocab.punc_respace"] #,"embeds/20NG-bert-layer12-average.full_vocab"]
+    vocab = preprocess.create_global_vocab(["embeds/20NG-elmo.full_vocab.punc_respace"]) #,"embeds/20NG-bert-layer12-average.full_vocab"]
 
     word_to_file, word_to_file_mult, train = preprocess.create_vocab_and_files(stopwords, "fetch20", 0, "train", vocab)
 
