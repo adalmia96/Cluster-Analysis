@@ -21,7 +21,7 @@ def main():
     stopwords = set(line.strip() for line in open('stopwords_en.txt'))
 
     vocab = create_global_vocab(args.vocab)
-    
+
     train_word_to_file, train_w_to_f_mult, files = create_vocab_and_files(stopwords, args.dataset, args.preprocess, "train", vocab)
     files_num = len(files)
 
@@ -178,7 +178,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--id2name', type=Path, help="id2name file")
 
     parser.add_argument("--dataset", type=str, required=True, choices=["fetch20", "children", "reuters"])
-    parser.add_argument("--preprocess", type=bool, default=False)
+    parser.add_argument("--preprocess", type=int, default=0)
     parser.add_argument("--vocab", required=True,  nargs='+', default=[])
 
 

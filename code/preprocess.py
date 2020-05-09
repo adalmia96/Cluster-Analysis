@@ -8,7 +8,6 @@ import numpy as np
 def create_global_vocab(vocab_files):
     vocab_list = set(line.split()[0] for line in open(vocab_files[0]))
     for vocab in vocab_files:
-
         vocab_list = vocab_list & set(line.split()[0] for line in open(vocab))
     return vocab_list
 
@@ -88,35 +87,7 @@ def create_files_children(type):
     return files
 
 
-def create_vocab_no_preprocess(stopwords, data, vocab):
-    word_to_file = {}
-    word_to_file_mult = {}
-    strip_punct = str.maketrans(string.punctuation, ' '*len(string.punctuation))
-    strip_digit = str.maketrans("", "", string.digits)
-
-    for file_num in range(0, len(data)):
-        words = data[file_num].lower().translate(strip_punct).translate(strip_digit)
-
-        words = words.split()
-        for word in words:
-            if word in stopwords or word not in vocab:
-                continue
-
-            if word in word_to_file:
-                word_to_file[word].add(file_num)
-                word_to_file_mult[word].append(file_num)
-            else:
-                word_to_file[word]= set()
-                word_to_file_mult[word] = []
-
-                word_to_file[word].add(file_num)
-                word_to_file_mult[word].append(file_num)
-
-    print("Files:" + str(len(data)))
-    print("Vocab: " + str(len(word_to_file)))
-    return word_to_file, word_to_file_mult, data
-
-def create_vocab_preprocess(stopwords, data, vocab):
+def create_vocab_preprocess(stopwords, data, vocab, preprocess):
     word_to_file = {}
     word_to_file_mult = {}
     strip_punct = str.maketrans(string.punctuation, ' '*len(string.punctuation))
@@ -140,7 +111,7 @@ def create_vocab_preprocess(stopwords, data, vocab):
                 word_to_file_mult[word].append(file_num)
 
     for word in list(word_to_file):
-        if len(word_to_file[word]) <= 5  or len(word) <= 3:
+        if len(word_to_file_mult[word]) < preprocess  or len(word) < 3:
             word_to_file.pop(word, None)
             word_to_file_mult.pop(word, None)
 
@@ -160,8 +131,4 @@ def create_vocab_and_files(stopwords, dataset, preprocess, type, vocab):
     elif dataset == "reuters":
         data = create_files_reuters(type)
 
-
-    if preprocess:
-        return create_vocab_preprocess(stopwords, data, vocab)
-    else:
-        return create_vocab_no_preprocess(stopwords, data, vocab)
+    return create_vocab_preprocess(stopwords, data, vocab, preprocess)
