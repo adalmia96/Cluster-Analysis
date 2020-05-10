@@ -205,19 +205,34 @@ def rank_td_idf(top_k_words, tf_idf):
     return top_10_words
 
 
-def rank_centrality(top_k_words, top_k, doc_matrix):
-    doc_matrix = np.array(doc_matrix)
+def rank_centrality(top_k_words, top_k, word_in_file):
     for i, cluster in enumerate(top_k):
         cluster = np.array(cluster)
-        subgraph = doc_matrix[cluster[:, None], cluster]
 
+        subgraph = calc_coo_matrix(top_k_words[i], word_in_file)
         G = nx.from_numpy_matrix(subgraph)
         sc = nx.subgraph_centrality(G)
 
         ind = np.argsort([sc[node] for node in sorted(sc)])[-10:][::-1].astype(int)
 
+
         top_k_words[i] = np.array(top_k_words[i])[ind]
     return top_k_words
+
+
+def calc_coo_matrix(word_intersect, word_in_file):
+    coo = np.zeros((len(word_intersect), len(word_intersect)))
+    for i in range(len(word_intersect)):
+        for j in range(i, len(word_intersect)):
+            coo[i, j] = count_wpair(word_intersect[i], word_intersect[j], word_in_file)
+            coo[j, i] = coo[i, j]
+    return coo
+
+def count_wpair(word1, word2, word_in_file):
+    combined_count = 0
+    if word1 != word2:
+        combined_count = len(set(word_in_file[word1]) & set(word_in_file[word2]))
+    return combined_count
 
 
 def find_words_for_cluster(m_clusters,  clusters):

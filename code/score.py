@@ -106,8 +106,8 @@ def main():
             elif args.rerank=="tfdf":
                 top_k_words = rank_td_idf(top_k_words, tfdf)
             elif args.rerank=="graph":
-                doc_matrix = npmi.calc_coo_matrix(words_index_intersect, train_word_to_file)
-                top_k_words = rank_centrality(top_k_words, top_k, doc_matrix)
+                #doc_matrix = npmi.calc_coo_matrix(words_index_intersect, train_word_to_file)
+                top_k_words = rank_centrality(top_k_words, top_k, train_word_to_file)
 
         val = npmi.average_npmi_topics(top_k_words, len(top_k_words), test_word_to_file,
                 test_files_num)

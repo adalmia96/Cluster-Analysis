@@ -16,21 +16,6 @@ import pdb
 
 # Custom imports
 
-def calc_coo_matrix(word_intersect, word_in_file):
-    coo = np.zeros((len(word_intersect), len(word_intersect)))
-    for i in range(len(word_intersect)):
-        for j in range(i, len(word_intersect)):
-            coo[i, j] = count_wpair(word_intersect[i], word_intersect[j], word_in_file)
-            coo[j, i] = coo[i, j]
-    return coo
-
-
-def count_wpair(word1, word2, word_in_file):
-    combined_count = 0
-    if word1 != word2:
-        combined_count = len(set(word_in_file[word1]) & set(word_in_file[word2]))
-    return combined_count
-
 
 
 def average_npmi_topics(topic_words, ntopics, word_doc_counts, nfiles):
