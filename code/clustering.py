@@ -18,6 +18,7 @@ from sklearn.metrics import pairwise_distances
 from sklearn.metrics.pairwise import cosine_similarity
 
 import numpy as np
+import networkx as nx
 import scipy.stats
 
 def PCA_dim_reduction(intersection, dim):
@@ -204,7 +205,19 @@ def rank_td_idf(top_k_words, tf_idf):
     return top_10_words
 
 
+def rank_centrality(top_k_words, top_k, doc_matrix):
+    doc_matrix = np.array(doc_matrix)
+    for i, cluster in enumerate(top_k):
+        cluster = np.array(cluster)
+        subgraph = doc_matrix[cluster[:, None], cluster]
 
+        G = nx.from_numpy_matrix(subgraph)
+        sc = nx.subgraph_centrality(G)
+
+        ind = np.argsort([sc[node] for node in sorted(sc)])[-10:][::-1].astype(int)
+
+        top_k_words[i] = np.array(top_k_words[i])[ind]
+    return top_k_words
 
 
 def find_words_for_cluster(m_clusters,  clusters):

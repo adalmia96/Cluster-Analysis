@@ -43,9 +43,6 @@ def main():
         data, word_index = read_entity_file(args.entities_file, args.id2name, train_word_to_file)
         intersection, words_index_intersect = find_intersect(word_index, train_w_to_f_mult, data, files_num, args.entities, args.doc_info)
 
-
-
-
     if args.use_dims:
         intersection = PCA_dim_reduction(intersection, args.use_dims)
 
@@ -81,7 +78,7 @@ def main():
 
         #Affinity matrix based
         elif args.clustering_algo == "DBSCAN":
-            k=5.8
+            k=6
             labels, top_k  = DBSCAN_model(intersection,k)
         elif args.clustering_algo == "Agglo":
             labels, top_k  = Agglo_model(intersection, args.num_topics, rand)
@@ -108,6 +105,9 @@ def main():
                 top_k_words = rank_td_idf(top_k_words, tf_idf)
             elif args.rerank=="tfdf":
                 top_k_words = rank_td_idf(top_k_words, tfdf)
+            elif args.rerank=="graph":
+                doc_matrix = npmi.calc_coo_matrix(words_index_intersect, train_word_to_file)
+                top_k_words = rank_centrality(top_k_words, top_k, doc_matrix)
 
         val = npmi.average_npmi_topics(top_k_words, len(top_k_words), test_word_to_file,
                 test_files_num)
@@ -173,11 +173,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--use_dims', type=int)
     parser.add_argument('--num_topics', type=int, default=20)
     parser.add_argument("--doc_info", type=str, choices=["SVD", "DUP", "WGT"])
-    parser.add_argument("--rerank", type=str, choices=["tf", "tfidf", "tfdf"])
+    parser.add_argument("--rerank", type=str, choices=["tf", "tfidf", "tfdf", "graph"])
 
     parser.add_argument('--id2name', type=Path, help="id2name file")
 
-    parser.add_argument("--dataset", type=str, required=True, choices=["fetch20", "children", "reuters"])
+    parser.add_argument("--dataset", type=str, default ="fetch20", choices=["fetch20", "children", "reuters"])
     parser.add_argument("--preprocess", type=int, default=0)
     parser.add_argument("--vocab", required=True,  nargs='+', default=[])
 
