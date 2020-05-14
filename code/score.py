@@ -74,7 +74,7 @@ def main():
         print("Number of Clusters:" + str(topics))
         for rand in range(NSEEDS):
             top_k_words, top_k = cluster(args.clustering_algo, intersection, words_index_intersect, topics, args.rerank, weights, args.topics_file, rand)
-            top_k_words = rerank(top_k_words, top_k, train_w_to_f_mult, train_word_to_file, tf_idf, tfdf)
+            top_k_words = rerank(args.rerank, top_k_words, top_k, train_w_to_f_mult, train_word_to_file, tf_idf, tfdf)
             val = npmi.average_npmi_topics(top_k_words, len(top_k_words), dev_word_to_file, dev_files_num)
             npmi_score = np.around(val, 5)
             print("NPMI:" + str(npmi_score))
@@ -91,7 +91,7 @@ def main():
     print("Number of Clusters:" + str(best_topic))
     for rand in range(NSEEDS):
         top_k_words, top_k = cluster(args.clustering_algo, intersection, words_index_intersect, best_topic, args.rerank, weights, args.topics_file, rand)
-        top_k_words = rerank(top_k_words, top_k, train_w_to_f_mult, train_word_to_file, tf_idf, tfdf)
+        top_k_words = rerank(args.rerank, top_k_words, top_k, train_w_to_f_mult, train_word_to_file, tf_idf, tfdf)
         val = npmi.average_npmi_topics(top_k_words, len(top_k_words), test_word_to_file,
                 test_files_num)
 
@@ -144,7 +144,7 @@ def cluster(clustering_algo, intersection, words_index_intersect, num_topics, re
     return top_k_words, top_k
 
 
-def rerank(top_k_words, top_k, train_w_to_f_mult, train_w_to_f, tf_idf, tfdf):
+def rerank(rerank, top_k_words, top_k, train_w_to_f_mult, train_w_to_f, tf_idf, tfdf):
     if rerank=="tf":
         top_k_words =  rank_freq(top_k_words, train_w_to_f_mult)
     elif rerank=="tfidf":

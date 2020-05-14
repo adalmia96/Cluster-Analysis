@@ -128,7 +128,7 @@ def create_vocab_preprocess(stopwords, data, vocab, preprocess):
                 word_to_file_mult[word].append(file_num)
 
     for word in list(word_to_file):
-        if len(word_to_file_mult[word]) < preprocess  or len(word) < 3:
+        if len(word_to_file_mult[word]) < preprocess  or len(word) <= 3:
             word_to_file.pop(word, None)
             word_to_file_mult.pop(word, None)
 
