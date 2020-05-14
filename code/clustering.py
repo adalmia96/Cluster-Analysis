@@ -86,7 +86,7 @@ def KMeans_model(vocab_embeddings, vocab, topics, rerank, rand, weights):
     for i in range(topics):
         topk_vals = sort_closest_center(centers[i], m_clusters, vocab_embeddings, i)
         if rerank:
-            indices.append(find_top_k_words(50, topk_vals, vocab))
+            indices.append(find_top_k_words(100, topk_vals, vocab))
         else:
             indices.append(find_top_k_words(10, topk_vals, vocab))
         #print(indices)

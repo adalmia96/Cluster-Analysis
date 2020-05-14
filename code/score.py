@@ -46,80 +46,119 @@ def main():
     if args.use_dims:
         intersection = PCA_dim_reduction(intersection, args.use_dims)
 
-    #weights , tfdf = get_weights_tfdf(words_index_intersect, train_w_to_f_mult, files_num)
-    #weights = None
+    weights , tfdf = get_weights_tfdf(words_index_intersect, train_w_to_f_mult, files_num)
+    weights = None
 
     if args.doc_info == "WGT":
         weights  = get_weights_tf(words_index_intersect, train_w_to_f_mult)
 
 
+
+
+    dev_word_to_file, dev_word_to_file_mult, dev_files = create_vocab_and_files(stopwords, args.dataset,args.preprocess, "valid", vocab)
+    dev_files_num = len(dev_files)
+
+
     test_word_to_file, test_word_to_file_mult, test_files = create_vocab_and_files(stopwords, args.dataset,args.preprocess, "test", vocab)
     test_files_num = len(test_files)
 
-    npmis = []
-    labels = None
-    top_k = None
-    pmi_mat = None
+
+
+
+    topics_npmi = []
     #pmi_mat = calc_pmi_matrix(words_index_intersect, train_word_to_file, files_num)
 
-    #eps = np.arange(4.73, 4.75, 0.005)
+    for topics in args.num_topics:
+        npmis = []
+
+        print("Number of Clusters:" + str(topics))
+        for rand in range(NSEEDS):
+            top_k_words, top_k = cluster(args.clustering_algo, intersection, words_index_intersect, topics, args.rerank, weights, args.topics_file, rand)
+            top_k_words = rerank(top_k_words, top_k, train_w_to_f_mult, train_word_to_file, tf_idf, tfdf)
+            val = npmi.average_npmi_topics(top_k_words, len(top_k_words), dev_word_to_file, dev_files_num)
+            npmi_score = np.around(val, 5)
+            print("NPMI:" + str(npmi_score))
+            npmis.append(npmi_score)
+
+        topics_npmi.append(np.mean(npmis))
+        print("NPMI Mean:" + str(topics_npmi[-1]))
+        print("NPMI Var:" + str(np.var(npmis)))
+
+    best_topic = args.num_topics[np.argmax(topics_npmi)]
+
+
+    npmis = []
+    print("Number of Clusters:" + str(best_topic))
     for rand in range(NSEEDS):
-        #Distance Based
-        if args.clustering_algo == "KMeans":
-            labels, top_k  = KMeans_model(intersection, words_index_intersect, args.num_topics, args.rerank, rand, weights)
-        elif args.clustering_algo == "SPKMeans":
-            labels, top_k  = SphericalKMeans_model(intersection, words_index_intersect, args.num_topics, args.rerank, rand, weights)
-        elif args.clustering_algo == "GMM":
-            labels, top_k = GMM_model(intersection, words_index_intersect, args.num_topics, args.rerank, rand)
-        elif args.clustering_algo == "KMedoids":
-            labels, top_k  = KMedoids_model(intersection,  words_index_intersect,  args.num_topics, rand)
-        elif args.clustering_algo == "VMFM":
-            labels, top_k = VonMisesFisherMixture_Model(intersection, args.num_topics, rand)
-
-        #Affinity matrix based
-        elif args.clustering_algo == "DBSCAN":
-            k=6
-            labels, top_k  = DBSCAN_model(intersection,k)
-        elif args.clustering_algo == "Agglo":
-            labels, top_k  = Agglo_model(intersection, args.num_topics, rand)
-        elif args.clustering_algo == "Spectral":
-            labels, top_k  = SpectralClustering_Model(intersection,args.num_topics, rand,  pmi_mat)
-
-        if args.clustering_algo == 'from_file':
-            with open('bert_topics.txt', 'r') as f:
-                top_k_words = f.readlines()
-            top_k_words = [tw.strip().replace(',', '').split() for tw in top_k_words]
-
-        elif args.clustering_algo == 'LDA':
-            with open(args.topics_file, 'r') as f:
-                top_k_words = f.readlines()
-            top_k_words = [tw.strip().replace(',', '').split() for tw in top_k_words]
-            for i, top_k in enumerate(top_k_words):
-                top_k_words[i] = top_k_words[i][2:12]
-
-        else:
-            bins, top_k_words = sort(labels, top_k,  words_index_intersect)
-            if args.rerank=="tf":
-                top_k_words =  rank_freq(top_k_words, train_w_to_f_mult)
-            elif args.rerank=="tfidf":
-                top_k_words = rank_td_idf(top_k_words, tf_idf)
-            elif args.rerank=="tfdf":
-                top_k_words = rank_td_idf(top_k_words, tfdf)
-            elif args.rerank=="graph":
-                #doc_matrix = npmi.calc_coo_matrix(words_index_intersect, train_word_to_file)
-                top_k_words = rank_centrality(top_k_words, top_k, train_word_to_file)
-
+        top_k_words, top_k = cluster(args.clustering_algo, intersection, words_index_intersect, best_topic, args.rerank, weights, args.topics_file, rand)
+        top_k_words = rerank(top_k_words, top_k, train_w_to_f_mult, train_word_to_file, tf_idf, tfdf)
         val = npmi.average_npmi_topics(top_k_words, len(top_k_words), test_word_to_file,
                 test_files_num)
 
         npmi_score = np.around(val, 5)
         print("NPMI:" + str(npmi_score))
         npmis.append(npmi_score)
-            #break;
-            #break;
-            #with open(f'{args.entities_file}_npmi.txt', 'a') as f:
-            #    f.write(f'{rand}\t{args.clustering_algo}\t{args.use_dims}\t{npmi_score}\n')
+
     print("NPMI Mean:" + str(np.mean(npmis)))
+    print("NPMI Var:" + str(np.var(npmis)))
+
+
+
+
+
+
+def cluster(clustering_algo, intersection, words_index_intersect, num_topics, rerank, weights, topics_file, rand):
+    if clustering_algo == "KMeans":
+        labels, top_k  = KMeans_model(intersection, words_index_intersect, num_topics, rerank, rand, weights)
+    elif clustering_algo == "SPKMeans":
+        labels, top_k  = SphericalKMeans_model(intersection, words_index_intersect, num_topics, rerank, rand, weights)
+    elif clustering_algo == "GMM":
+        labels, top_k = GMM_model(intersection, words_index_intersect, num_topics, rerank, rand)
+    elif clustering_algo == "KMedoids":
+        labels, top_k  = KMedoids_model(intersection,  words_index_intersect,  num_topics, rand)
+    elif clustering_algo == "VMFM":
+        labels, top_k = VonMisesFisherMixture_Model(intersection, num_topics, rand)
+
+    #Affinity matrix based
+    elif clustering_algo == "DBSCAN":
+        k=6
+        labels, top_k  = DBSCAN_model(intersection,k)
+    elif clustering_algo == "Agglo":
+        labels, top_k  = Agglo_model(intersecticlustering_algoon, num_topics, rand)
+    elif clustering_algo == "Spectral":
+        labels, top_k  = SpectralClustering_Model(intersection,num_topics, rand,  weights)
+
+    if clustering_algo == 'from_file':
+        with open('bert_topics.txt', 'r') as f:
+            top_k_words = f.readlines()
+        top_k_words = [tw.strip().replace(',', '').split() for tw in top_k_words]
+
+    elif clustering_algo == 'LDA':
+        with open(topics_file, 'r') as f:
+            top_k_words = f.readlines()
+        top_k_words = [tw.strip().replace(',', '').split() for tw in top_k_words]
+        for i, top_k in enumerate(top_k_words):
+            top_k_words[i] = top_k_words[i][2:12]
+    else:
+        bins, top_k_words = sort(labels, top_k,  words_index_intersect)
+    return top_k_words, top_k
+
+
+def rerank(top_k_words, top_k, train_w_to_f_mult, train_w_to_f, tf_idf, tfdf):
+    if rerank=="tf":
+        top_k_words =  rank_freq(top_k_words, train_w_to_f_mult)
+    elif rerank=="tfidf":
+        top_k_words = rank_td_idf(top_k_words, tf_idf)
+    elif rerank=="tfdf":
+        top_k_words = rank_td_idf(top_k_words, tfdf)
+    elif rerank=="graph":
+        #doc_matrix = npmi.calc_coo_matrix(words_index_intersect, train_word_to_file)
+        top_k_words = rank_centrality(top_k_words, top_k, train_w_to_f)
+    return top_k_words
+
+
+
+
 
 
 def sort(labels, indices, word_index):
@@ -171,7 +210,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument( "--topics_file", type=str, help="topics file")
 
     parser.add_argument('--use_dims', type=int)
-    parser.add_argument('--num_topics', type=int, default=20)
+    parser.add_argument('--num_topics',  nargs='+', type=int, default=[20])
     parser.add_argument("--doc_info", type=str, choices=["SVD", "DUP", "WGT"])
     parser.add_argument("--rerank", type=str, choices=["tf", "tfidf", "tfdf", "graph"])
 
@@ -179,7 +218,7 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument("--dataset", type=str, default ="fetch20", choices=["fetch20", "children", "reuters"])
     parser.add_argument("--preprocess", type=int, default=0)
-    parser.add_argument("--vocab", required=True,  nargs='+', default=[])
+    parser.add_argument("--vocab", required=True,  type=str, nargs='+', default=[])
 
 
     args = parser.parse_args()

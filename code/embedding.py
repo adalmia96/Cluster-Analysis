@@ -117,7 +117,7 @@ def get_weights_tf(vocab_list, weights):
 def get_weights_tfidf(vocab_list, weights):
     return [weights[w] for w in vocab_list]
 def get_weights_tfdf(vocab_list, word_file_count, files_num):
-    count = np.array(get_weights_freq(vocab_list, word_file_count))
+    count = np.array(get_weights_tf(vocab_list, word_file_count))
     tf = count/np.sum(count)
 
     df = np.array([len(np.unique(word_file_count[w])) for w in vocab_list])

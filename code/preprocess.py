@@ -72,14 +72,31 @@ def combine_split_children(type):
         return test
 
 def create_files_20news(type):
+    if type == "valid":
+        type = "test"
     data = fetch_20newsgroups(data_home='./data/', subset=type, remove=('headers', 'footers', 'quotes'))
     files = data['data'];
     return files
 
 def create_files_reuters(type):
+    t = type
+    if type == "valid":
+        t = "train"
+
     documents = reuters.fileids()
-    id = [d for d in documents if d.startswith(type)]
-    files = [reuters.raw(doc_id) for doc_id in id]
+    id = [d for d in documents if d.startswith(t)]
+    files = np.array([reuters.raw(doc_id) for doc_id in id])
+
+    if type != "test":
+        kf = KFold(n_splits=5, shuffle=True, random_state = 0)
+        indices = list(kf.split(files))[0]
+        train = files[indices[0]]
+        valid = files[indices[1]]
+
+        if type == "train":
+            return train
+        elif type == "valid":
+            return valid
     return files
 
 def create_files_children(type):
