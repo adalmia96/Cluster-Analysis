@@ -113,7 +113,7 @@ def create_entities_ft(model, train_word_to_file, doc_info):
 
 
 def get_weights_tf(vocab_list, weights):
-    return [len(weights[w]) for w in vocab_list]
+    return np.array([len(weights[w]) for w in vocab_list])
 def get_weights_tfidf(vocab_list, weights):
     return [weights[w] for w in vocab_list]
 def get_weights_tfdf(vocab_list, word_file_count, files_num):

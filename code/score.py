@@ -82,7 +82,9 @@ def main():
                 redo = False;
                 for c in top_k:
                     if len(c) < 10:
+
                         weights[c] -= 0.1
+
                         redo = True
 
                 if redo:
@@ -160,7 +162,7 @@ def cluster(clustering_algo, intersection, words_index_intersect, num_topics, re
             top_k_words[i] = top_k_words[i][2:12]
     else:
         bins, top_k_words = sort(labels, top_k,  words_index_intersect)
-    return top_k_words, top_k
+    return top_k_words, np.array(top_k)
 
 
 def rerank(rerank, top_k_words, top_k, train_w_to_f_mult, train_w_to_f, tf_idf, tfdf):
