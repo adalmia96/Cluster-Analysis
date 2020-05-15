@@ -72,13 +72,32 @@ def main():
         npmis = []
 
         print("Number of Clusters:" + str(topics))
-        for rand in range(NSEEDS):
+        rand = 0
+
+        while rand < NSEEDS:
+
             top_k_words, top_k = cluster(args.clustering_algo, intersection, words_index_intersect, topics, args.rerank, weights, args.topics_file, rand)
+
+            if args.doc_info == "WGT":
+                redo = False;
+                for cluster in top_k:
+                    if len(top_k) < 10:
+                        weights[top_k] -= 0.1
+                        redo = True
+
+                if redo:
+                    print("Retry Cluster")
+                    continue
+
+
+
             top_k_words = rerank(args.rerank, top_k_words, top_k, train_w_to_f_mult, train_word_to_file, tf_idf, tfdf)
             val = npmi.average_npmi_topics(top_k_words, len(top_k_words), dev_word_to_file, dev_files_num)
             npmi_score = np.around(val, 5)
             print("NPMI:" + str(npmi_score))
             npmis.append(npmi_score)
+
+            rand += 1
 
         topics_npmi.append(np.mean(npmis))
         print("NPMI Mean:" + str(topics_npmi[-1]))
