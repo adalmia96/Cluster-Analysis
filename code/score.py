@@ -80,9 +80,9 @@ def main():
 
             if args.doc_info == "WGT":
                 redo = False;
-                for cluster in top_k:
-                    if len(top_k) < 10:
-                        weights[top_k] -= 0.1
+                for c in top_k:
+                    if len(c) < 10:
+                        weights[c] -= 0.1
                         redo = True
 
                 if redo:
