@@ -3,6 +3,8 @@ from preprocess import *
 from embedding import *
 
 from sklearn.metrics import pairwise_distances_argmin_min
+from sklearn.preprocessing import RobustScaler
+from sklearn.preprocessing import MinMaxScaler
 import sys
 import npmi
 import argparse
@@ -46,11 +48,18 @@ def main():
     if args.use_dims:
         intersection = PCA_dim_reduction(intersection, args.use_dims)
 
-    weights , tfdf = get_weights_tfdf(words_index_intersect, train_w_to_f_mult, files_num)
+    #weights , tfdf = get_weights_tfdf(words_index_intersect, train_w_to_f_mult, files_num)
     weights = None
+    tfdf = None
 
     if args.doc_info == "WGT":
-        weights  = get_weights_tf(words_index_intersect, train_w_to_f_mult)
+        weights  = np.array(get_weights_tf(words_index_intersect, train_word_to_file)) 
+        transformer = RobustScaler().fit(get_weights_tf(words_index_intersect, train_w_to_f_mult).reshape(-1, 1))
+        weight  = transformer.transform(weights.reshape(-1, 1))
+        x  = MinMaxScaler().fit(weight)
+        weights = (x.transform(weight)).T.squeeze()
+
+        #weights  = weights* np.array(get_weights_tf(words_index_intersect, train_word_to_file))
 
 
 
@@ -82,14 +91,21 @@ def main():
                 redo = False;
                 for c in top_k:
                     if len(c) < 10:
-
-                        weights[c] -= 0.1
-
+                        weights[c] = weights[c] -  0.1*weights[c]
+                        if weights[c][0] < 1e-16:
+                            weights[c] = 0*weights[c] 
+                       # print(weights[c])
                         redo = True
 
                 if redo:
                     print("Retry Cluster")
                     continue
+                else:
+                    weights  = np.array(get_weights_tf(words_index_intersect, train_word_to_file))
+                    transformer = RobustScaler().fit(get_weights_tf(words_index_intersect, train_w_to_f_mult).reshape(-1, 1))
+                    weight  = transformer.transform(weights.reshape(-1, 1))
+                    x  = MinMaxScaler().fit(weight)
+                    weights = (x.transform(weight)).T.squeeze()
 
 
 
@@ -168,6 +184,7 @@ def cluster(clustering_algo, intersection, words_index_intersect, num_topics, re
 def rerank(rerank, top_k_words, top_k, train_w_to_f_mult, train_w_to_f, tf_idf, tfdf):
     if rerank=="tf":
         top_k_words =  rank_freq(top_k_words, train_w_to_f_mult)
+        #top_k_words =  rank_freq(top_k_words, train_w_to_f)
     elif rerank=="tfidf":
         top_k_words = rank_td_idf(top_k_words, tf_idf)
     elif rerank=="tfdf":

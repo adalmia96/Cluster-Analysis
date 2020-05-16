@@ -1,6 +1,6 @@
 from sklearn.cluster import DBSCAN
 from sklearn.mixture import GaussianMixture
-from sklearn_extra.cluster import KMedoids
+#from sklearn_extra.cluster import KMedoids
 from sklearn.cluster import KMeans
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.cluster import SpectralClustering
@@ -119,7 +119,7 @@ def GMM_model(vocab_embeddings, vocab,  topics, rerank, rand):
         else:
             indices.append(find_top_k_words(10, topk_vals, vocab))
 
-    return GMM.predict(vocab_embeddings), indices, GMM
+    return GMM.predict(vocab_embeddings), indices
 
 def VonMisesFisherMixture_Model(vocab_embeddings, topics, rand):
     #vmf_soft = VonMisesFisherMixture(n_clusters=topics, posterior_type='hard', n_jobs=-1, random_state=rand).fit(vocab_embeddings)
