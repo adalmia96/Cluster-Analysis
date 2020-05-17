@@ -5,6 +5,8 @@ import numpy as np
 from sklearn import preprocessing
 from sklearn.decomposition import TruncatedSVD
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.preprocessing import RobustScaler
+from sklearn.preprocessing import MinMaxScaler
 
 def create_id_dict(id2name):
     data = {}

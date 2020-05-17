@@ -3,8 +3,6 @@ from preprocess import *
 from embedding import *
 
 from sklearn.metrics import pairwise_distances_argmin_min
-from sklearn.preprocessing import RobustScaler
-from sklearn.preprocessing import MinMaxScaler
 import sys
 import npmi
 import argparse
