@@ -54,10 +54,10 @@ def main():
 
     if args.doc_info == "WGT":
         weights  = np.array(get_weights_tf(words_index_intersect, train_word_to_file)) 
-        transformer = RobustScaler().fit(get_weights_tf(words_index_intersect, train_w_to_f_mult).reshape(-1, 1))
-        weight  = transformer.transform(weights.reshape(-1, 1))
-        x  = MinMaxScaler().fit(weight)
-        weights = (x.transform(weight)).T.squeeze()
+        #transformer = RobustScaler().fit(get_weights_tf(words_index_intersect, train_w_to_f_mult).reshape(-1, 1))
+        #weight  = transformer.transform(weights.reshape(-1, 1))
+        #x  = MinMaxScaler().fit(weight)
+        #weights = (x.transform(weight)).T.squeeze()
 
         #weights  = weights* np.array(get_weights_tf(words_index_intersect, train_word_to_file))
 
@@ -102,10 +102,10 @@ def main():
                     continue
                 else:
                     weights  = np.array(get_weights_tf(words_index_intersect, train_word_to_file))
-                    transformer = RobustScaler().fit(get_weights_tf(words_index_intersect, train_w_to_f_mult).reshape(-1, 1))
-                    weight  = transformer.transform(weights.reshape(-1, 1))
-                    x  = MinMaxScaler().fit(weight)
-                    weights = (x.transform(weight)).T.squeeze()
+                    #transformer = RobustScaler().fit(get_weights_tf(words_index_intersect, train_w_to_f_mult).reshape(-1, 1))
+                    #weight  = transformer.transform(weights.reshape(-1, 1))
+                    #x  = MinMaxScaler().fit(weight)
+                    #weights = (x.transform(weight)).T.squeeze()
 
 
 
@@ -126,8 +126,31 @@ def main():
 
     npmis = []
     print("Number of Clusters:" + str(best_topic))
-    for rand in range(NSEEDS):
+    rand = 0
+    while rand < NSEEDS:
         top_k_words, top_k = cluster(args.clustering_algo, intersection, words_index_intersect, best_topic, args.rerank, weights, args.topics_file, rand)
+
+        if args.doc_info == "WGT":
+            redo = False;
+            for c in top_k:
+                if len(c) < 10:
+                    weights[c] = weights[c] -  0.1*weights[c]
+                    if weights[c][0] < 1e-16:
+                        weights[c] = 0*weights[c]
+                        # print(weights[c])
+                    redo = True
+
+            if redo:
+                print("Retry Cluster")
+                continue
+            else:
+                weights  = np.array(get_weights_tf(words_index_intersect, train_word_to_file))
+                #transformer = RobustScaler().fit(get_weights_tf(words_index_intersect, train_w_to_f_mult).reshape(-1, 1))
+                #weight  = transformer.transform(weights.reshape(-1, 1))
+                #x  = MinMaxScaler().fit(weight)
+                #weights = (x.transform(weight)).T.squeeze()
+
+        
         top_k_words = rerank(args.rerank, top_k_words, top_k, train_w_to_f_mult, train_word_to_file, tf_idf, tfdf)
         val = npmi.average_npmi_topics(top_k_words, len(top_k_words), test_word_to_file,
                 test_files_num)
@@ -135,7 +158,7 @@ def main():
         npmi_score = np.around(val, 5)
         print("NPMI:" + str(npmi_score))
         npmis.append(npmi_score)
-
+        rand += 1
     print("NPMI Mean:" + str(np.mean(npmis)))
     print("NPMI Var:" + str(np.var(npmis)))
 
