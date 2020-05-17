@@ -53,13 +53,7 @@ def main():
     tfdf = None
 
     if args.doc_info == "WGT":
-        weights  = np.array(get_weights_tf(words_index_intersect, train_word_to_file)) 
-        #transformer = RobustScaler().fit(get_weights_tf(words_index_intersect, train_w_to_f_mult).reshape(-1, 1))
-        #weight  = transformer.transform(weights.reshape(-1, 1))
-        #x  = MinMaxScaler().fit(weight)
-        #weights = (x.transform(weight)).T.squeeze()
-
-        #weights  = weights* np.array(get_weights_tf(words_index_intersect, train_word_to_file))
+        weights = get_rs_weights_tf(words_index_intersect, train_w_to_f_mult)
 
 
 
@@ -93,7 +87,7 @@ def main():
                     if len(c) < 10:
                         weights[c] = weights[c] -  0.1*weights[c]
                         if weights[c][0] < 1e-16:
-                            weights[c] = 0*weights[c] 
+                            weights[c] = 0*weights[c]
                        # print(weights[c])
                         redo = True
 
@@ -101,11 +95,7 @@ def main():
                     print("Retry Cluster")
                     continue
                 else:
-                    weights  = np.array(get_weights_tf(words_index_intersect, train_word_to_file))
-                    #transformer = RobustScaler().fit(get_weights_tf(words_index_intersect, train_w_to_f_mult).reshape(-1, 1))
-                    #weight  = transformer.transform(weights.reshape(-1, 1))
-                    #x  = MinMaxScaler().fit(weight)
-                    #weights = (x.transform(weight)).T.squeeze()
+                    weights = get_rs_weights_tf(words_index_intersect, train_w_to_f_mult)
 
 
 
@@ -144,13 +134,9 @@ def main():
                 print("Retry Cluster")
                 continue
             else:
-                weights  = np.array(get_weights_tf(words_index_intersect, train_word_to_file))
-                #transformer = RobustScaler().fit(get_weights_tf(words_index_intersect, train_w_to_f_mult).reshape(-1, 1))
-                #weight  = transformer.transform(weights.reshape(-1, 1))
-                #x  = MinMaxScaler().fit(weight)
-                #weights = (x.transform(weight)).T.squeeze()
+                weights = get_rs_weights_tf(words_index_intersect, train_w_to_f_mult)
 
-        
+
         top_k_words = rerank(args.rerank, top_k_words, top_k, train_w_to_f_mult, train_word_to_file, tf_idf, tfdf)
         val = npmi.average_npmi_topics(top_k_words, len(top_k_words), test_word_to_file,
                 test_files_num)
