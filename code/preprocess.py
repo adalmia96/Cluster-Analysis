@@ -81,22 +81,22 @@ def create_files_20news(type):
 def create_files_reuters(type):
     t = type
     if type == "valid":
-        t = "train"
+        t = "test"
 
     documents = reuters.fileids()
     id = [d for d in documents if d.startswith(t)]
     files = np.array([reuters.raw(doc_id) for doc_id in id])
 
-    if type != "test":
-        kf = KFold(n_splits=5, shuffle=True, random_state = 0)
-        indices = list(kf.split(files))[0]
-        train = files[indices[0]]
-        valid = files[indices[1]]
+   # if type != "test":
+   #     kf = KFold(n_splits=5, shuffle=True, random_state = 0)
+   #     indices = list(kf.split(files))[0]
+   #     train = files[indices[0]]
+   #     valid = files[indices[1]]
 
-        if type == "train":
-            return train
-        elif type == "valid":
-            return valid
+   #     if type == "train":
+   #         return train
+   #     elif type == "valid":
+   #         return valid
     return files
 
 def create_files_children(type):
@@ -107,7 +107,7 @@ def create_files_children(type):
 def create_vocab_preprocess(stopwords, data, vocab, preprocess):
     word_to_file = {}
     word_to_file_mult = {}
-    strip_punct = str.maketrans(string.punctuation, ' '*len(string.punctuation))
+    strip_punct = str.maketrans("", "", string.punctuation)
     strip_digit = str.maketrans("", "", string.digits)
 
     for file_num in range(0, len(data)):
