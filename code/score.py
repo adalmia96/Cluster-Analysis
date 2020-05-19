@@ -51,7 +51,7 @@ def main():
     tfdf = None
 
     if args.doc_info == "WGT":
-        weights = get_rs_weights_tf(words_index_intersect, train_w_to_f_mult)
+        weights = get_weights_tf(words_index_intersect, train_w_to_f_mult)
 
 
 
@@ -79,21 +79,21 @@ def main():
 
             top_k_words, top_k = cluster(args.clustering_algo, intersection, words_index_intersect, topics, args.rerank, weights, args.topics_file, rand)
 
-            if args.doc_info == "WGT":
-                redo = False;
-                for c in top_k:
-                    if len(c) < 10:
-                        weights[c] = weights[c] -  0.1*weights[c]
-                        if weights[c][0] < 1e-16:
-                            weights[c] = 0*weights[c]
-                       # print(weights[c])
-                        redo = True
-
-                if redo:
-                    print("Retry Cluster")
-                    continue
-                else:
-                    weights = get_rs_weights_tf(words_index_intersect, train_w_to_f_mult)
+            # if args.doc_info == "WGT":
+            #     redo = False;
+            #     for c in top_k:
+            #         if len(c) < 10:
+            #             weights[c] = weights[c] -  0.1*weights[c]
+            #             if weights[c][0] < 1e-16:
+            #                 weights[c] = 0*weights[c]
+            #            # print(weights[c])
+            #             redo = True
+            #
+            #     if redo:
+            #         print("Retry Cluster")
+            #         continue
+            #     else:
+            #         weights = get_rs_weights_tf(words_index_intersect, train_w_to_f_mult)
 
 
 
@@ -118,21 +118,21 @@ def main():
     while rand < NSEEDS:
         top_k_words, top_k = cluster(args.clustering_algo, intersection, words_index_intersect, best_topic, args.rerank, weights, args.topics_file, rand)
 
-        if args.doc_info == "WGT":
-            redo = False;
-            for c in top_k:
-                if len(c) < 10:
-                    weights[c] = weights[c] -  0.1*weights[c]
-                    if weights[c][0] < 1e-16:
-                        weights[c] = 0*weights[c]
-                        # print(weights[c])
-                    redo = True
-
-            if redo:
-                print("Retry Cluster")
-                continue
-            else:
-                weights = get_rs_weights_tf(words_index_intersect, train_w_to_f_mult)
+        # if args.doc_info == "WGT":
+        #     redo = False;
+        #     for c in top_k:
+        #         if len(c) < 10:
+        #             weights[c] = weights[c] -  0.1*weights[c]
+        #             if weights[c][0] < 1e-16:
+        #                 weights[c] = 0*weights[c]
+        #                 # print(weights[c])
+        #             redo = True
+        #
+        #     if redo:
+        #         print("Retry Cluster")
+        #         continue
+        #     else:
+        #         weights = get_rs_weights_tf(words_index_intersect, train_w_to_f_mult)
 
 
         top_k_words = rerank(args.rerank, top_k_words, top_k, train_w_to_f_mult, train_word_to_file, tf_idf, tfdf)
