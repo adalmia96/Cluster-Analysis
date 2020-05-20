@@ -176,7 +176,7 @@ def init():
     else:
         stopwords = set()
 
-    word_to_file, _, files = preprocess.create_vocab_preprocess(stopwords, dataset=args.data, preprocess = 5, type="train",  vocab = set())
+    word_to_file, _, files = preprocess.create_vocab_and_files(stopwords, dataset=args.data, preprocess = 5, type="train",  vocab = set())
 
     if args.use_full_vocab == 1:
         valid_vocab = -1
