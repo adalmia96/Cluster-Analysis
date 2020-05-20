@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# -*- coding: utf-8 -*-
 # Author: Suzanna Sia
 
 # Standard imports
@@ -9,6 +10,10 @@ import math
 import os, sys
 import nltk.data
 import string
+import locale
+locale.setlocale(locale.LC_ALL, 'en_US.utf-8')
+
+
 # argparser
 import time
 import argparse
@@ -17,6 +22,9 @@ argparser.add_argument('--nlayer', default=12, type=int, help="layer of bert to 
 argparser.add_argument('--save_fn', default="", type=str, help="filename to save bert embeddings")
 argparser.add_argument('--agg_by', default="firstword", type=str, help="method for aggregating compound words")
 argparser.add_argument('--device', default=0, required=False)
+argparser.add_argument('--data', default="20NG", required=False)
+argparser.add_argument('--use_stopwords', default=0, type=int, required=False, help="1 for incl stopwords")
+argparser.add_argument('--use_full_vocab', default=0, type=int, required=False, help="1 for incl stopwords")
 args = argparser.parse_args()
 
 # Custom imports
@@ -52,10 +60,18 @@ class BertWordFromTextEncoder:
         self.w2vc = {} #counts
         self.compounds = set()
         self.agg_by = ""
+        self.use_full_vocab = False
 
         if valid_vocab is None:
             print("Provide list of vocab words.")
             sys.exit(1)
+
+        elif valid_vocab == -1:
+            self.use_full_vocab = True
+            print("Extract embeddings with full vocab")
+
+        else:
+            print(f"Extract embeddings with restricted vocab, {len(valid_vocab)} words")
 
         self.valid_vocab = valid_vocab
 
@@ -92,29 +108,36 @@ class BertWordFromTextEncoder:
 
         emb = emb.cpu().detach().numpy()
 
-        if word in self.valid_vocab:
-            if len(compound_ixs)>1:
-                self.compounds.add(word)
+        if self.use_full_vocab:
+            pass
+        else:
+            if word not in self.valid_vocab:
+                return
 
-            if word in self.w2vb:
-                self.w2vb[word] += emb
-                self.w2vc[word] += 1
-            else:
-                self.w2vb[word] = emb
-                self.w2vc[word] = 1
+        if len(compound_ixs)>1:
+            self.compounds.add(word)
+
+        if word in self.w2vb:
+            self.w2vb[word] += emb
+            self.w2vc[word] += 1
+        else:
+            self.w2vb[word] = emb
+            self.w2vc[word] = 1
 
     def eb_dump(self, save_fn):
         print("saving embeddings")
 
         all_vecs = []
         for word in self.w2vb:
-            mean_vector = np.around(self.w2vb[word]/self.w2vc[word], 5)
+            #word = word.encode('utf-8', 'ignore').decode('utf-8')
+
+            mean_vector = np.around(self.w2vb[word]/self.w2vc[word], 8)
             vect = np.append(word, mean_vector)
             all_vecs.append(vect)
 
         #np.savetxt(f'embeds/bert_embeddings{i}-layer{args.layer}.txt', all_vecs, fmt = '%s', delimiter=" ")
 
-        np.savetxt(save_fn, np.vstack(all_vecs), fmt = '%s', delimiter=" ")
+        np.savetxt(save_fn, np.vstack(all_vecs), fmt = '%s', delimiter=" ", encoding='utf-8')
         print(f"{len(all_vecs)} vectors saved to {save_fn}")
         print(f"{len(self.compounds)} compound words saved to: compound_words.txt")
         
@@ -127,7 +150,7 @@ class BertWordFromTextEncoder:
         self.agg_by = agg_by
 
         if len(save_fn)==0:
-            save_fn = f"bert_embeddings-layer{args.nlayer}-{agg_by}.txt"
+            save_fn = f"{args.data}-bert-layer{args.nlayer}-{agg_by}.txt"
             print(f"No save filename provided, saving to: {save_fn}")
 
         start = time.time()
@@ -144,40 +167,76 @@ class BertWordFromTextEncoder:
                 for sent in sents:
                     words = self.bert_tokenizer.tokenize(sent)
 
-                    if len(words)>50:
-                        # long sentences are going to crash/run out of mem.
-                        continue
+                    if len(words) > 500:
+                        new_sents = [""]
+                        fragment = ""
+                        nsubwords = 0
+                        currentlength = 0
+                        for w in words:
+                            nsubwords += 1
+                            if w.startswith("##"):
+                                fragment += w.replace("##", "")
+                                currentlength += 1
+                            else:
+                                if nsubwords > 500:
+                                    new_sents.append("")
+                                new_sents[-1] += " " + fragment
+                                fragment = w
+                                currentlength = 1
+                        new_sents[-1] += " " + fragment
+                        new_sents = [s[1:] for s in new_sents]
 
-                    input_ids = torch.tensor([self.bert_tokenizer.encode(sent)]).to(self.device)
-                    # words correspond to input_ids correspond to embeds
+                        detok = " ".join(new_sents)
+                        if not words == self.bert_tokenizer.tokenize(detok):
+                            pdb.set_trace()
+                    else:
+                        new_sents = [sent]
 
-                    try:
-                        embeds = self.model(input_ids)[-2:][1][layer][0]
-                    except Exception as e:
-                        print(f"Crashed during encoding sentence: {sent}\n\n")
-                        print(f"Error message:", e)
-                        sys.exit(1)
+                    for sent in new_sents:
+                        if len(new_sents) > 1:
+                            words = self.bert_tokenizer.tokenize(sent)
+                        try:
+                            input_ids = torch.tensor([self.bert_tokenizer.encode(sent)]).to(self.device)
+                        except:
+                            pdb.set_trace()
+                        # words correspond to input_ids correspond to embeds
 
-                    compound_word = []
-                    compound_ixs = []
-                    full_word = ""
+                        try:
+                            embeds = self.model(input_ids)[-2:][1][layer][0]
+                        except Exception as e:
+                            print(f"Crashed during encoding sentence: {sent}\n\n")
+                            print(f"Error message:", e)
+                            sys.exit(1)
 
-                    for w, word in enumerate(words):
-                        if word.startswith('##'):
-                            compound_word.append(word.replace('##',''))
-                            compound_ixs.append(w)
+                        compound_word = []
+                        compound_ixs = []
+                        full_word = ""
 
-                        else:
-                            # add the previous word
-                            # reset the compound word
-                            if w!=0:
-                                self._add_word(compound_word, compound_ixs, embeds)
+                        for w, word in enumerate(words):
 
-                            compound_word = [word]
-                            compound_ixs = [w]
 
-                        if w == len(words)-1:
-                            self._add_word(compound_word, compound_ixs, embeds)
+                            if word.startswith('##'):
+                                compound_word.append(word.replace('##',''))
+                                compound_ixs.append(w)
+
+
+                            else:
+                                # add the previous word
+                                # reset the compound word
+                                if w!=0:
+                                    try:
+                                        self._add_word(compound_word, compound_ixs, embeds)
+                                    except:
+                                        pdb.set_trace()
+
+                                compound_word = [word]
+                                compound_ixs = [w]
+
+                            if w == len(words)-1:
+                                try:
+                                    self._add_word(compound_word, compound_ixs, embeds)
+                                except:
+                                    pdb.set_trace()
 
         self.eb_dump(save_fn)
 
@@ -185,12 +244,18 @@ def init():
     """ Sample script """
 
     import preprocess
-    stopwords = set(line.strip() for line in open("stopwords_en.txt"))
-    word_to_file, word_to_file_mult, files = preprocess.create_vocab_and_files_20news(stopwords, "train")
+    if args.use_stopwords==1:
+        stopwords = set(line.strip() for line in open("stopwords_en.txt", encoding='utf-8'))
+    else:
+        stopwords = set()
 
-    valid_vocab = word_to_file.keys()
-    print("vocab size:", len(valid_vocab))
-
+    word_to_file = {}
+    word_to_file, _, files = preprocess.get_dataset(dataset=args.data, type="train")
+    
+    if args.use_full_vocab == 1:
+        valid_vocab = -1
+    else:
+        valid_vocab = word_to_file.keys()
 
     ### this is what you care about
     encoder = BertWordFromTextEncoder(valid_vocab=valid_vocab)

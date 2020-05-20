@@ -1,12 +1,14 @@
-import gensim
+#import gensim
 import fasttext.util
 import fasttext
 import numpy as np
 from sklearn import preprocessing
 from sklearn.decomposition import TruncatedSVD
+import pdb
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import RobustScaler
 from sklearn.preprocessing import MinMaxScaler
+
 
 def create_id_dict(id2name):
     data = {}
@@ -30,7 +32,8 @@ def read_entity_file(file, id_to_word, vocab):
         if embedding[0] in vocab:
             word_index[embedding[0]] = index
             index +=1
-            embedding = list(map(float, embedding[1:]))
+            #embedding = list(map(float, embedding[1:]))
+            embedding = list(map(float, embedding[-300:]))
             data.append(embedding)
 
     print("KG: " + str(len(data)))

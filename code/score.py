@@ -24,13 +24,20 @@ def main():
 
     train_word_to_file, train_w_to_f_mult, files = create_vocab_and_files(stopwords, args.dataset, args.preprocess, "train", vocab)
     files_num = len(files)
+    print("len vocab size:", len(train_word_to_file.keys()))
 
     intersection = None
     words_index_intersect = None
 
+<<<<<<< HEAD
+    data, bword_index = read_entity_file("models/jose_300d.txt", args.id2name, train_word_to_file)
+
+    tf_idf = get_tfidf_score(files, train_word_to_file, bword_index)
+=======
 
     tf_idf = get_tfidf_score(files, train_word_to_file)
 
+>>>>>>> master
 
     if args.entities == "word2vec":
         model = gensim.models.KeyedVectors.load_word2vec_format('models/GoogleNews-vectors-negative300.bin', binary=True)
