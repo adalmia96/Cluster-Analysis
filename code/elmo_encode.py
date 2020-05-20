@@ -21,19 +21,8 @@ argparser = argparse.ArgumentParser()
 argparser.add_argument('--save_fn', default="", required=False, type=str, help="filename to save elmo embeddings")
 argparser.add_argument('--device', default=0, required=False)
 argparser.add_argument('--data', default="20NG", required=False)
-argparser.add_argument('--use_stopwords', default=0, type=int, required=False, help="1 for incl stopwords")
-argparser.add_argument('--use_full_vocab', default=0, type=int, required=False, help="1 for incl stopwords")
-args = argparser.parse_args()
-
-# Custom imports
-import allennlp
-import torch
-from allennlp.modules.elmo import Elmo, batch_to_ids
-
-options_file \
-= "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json"
-weight_file \
-= "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5"
+argparser.add_argument('--use_stopwords', default=0, type=int, required=False)
+argparser.add_argument('--use_full_vocab', default=0, type=int, required=False)
 
 device=torch.device("cuda:{}".format(args.device) if int(args.device)>=0 else "cpu")
 
@@ -68,8 +57,8 @@ class ElmoWordFromTextEncoder:
             sys.exit(1)
         
         self.use_full_vocab = False
-        #self.strip_punct = str.maketrans("", "", string.punctuation)
-        self.strip_punct = str.maketrans(string.punctuation, ' '*len(string.punctuation))
+        self.strip_punct = str.maketrans("", "", string.punctuation)
+        #self.strip_punct = str.maketrans(string.punctuation, ' '*len(string.punctuation))
         self.strip_digit = str.maketrans("", "", string.digits)
 
         if valid_vocab is None:
@@ -161,7 +150,9 @@ class ElmoWordFromTextEncoder:
                     except Exception as e:
                         #print("Something went wrong with:", sentss)
                         #print("Error message:", e)
-                        #print("Skipping..")
+                        print("Skipping..")
+
+                        sents = sents[50:]
                         continue
                         #sys.exit(1)
                     embeds = embeds['elmo_representations'][0]
