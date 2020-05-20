@@ -16,6 +16,8 @@ import pdb
 
 # Custom imports
 
+
+
 def average_npmi_topics(topic_words, ntopics, word_doc_counts, nfiles):
 
     eps = 10**(-12)

@@ -20,7 +20,7 @@ DB = Debugger()
 argparser = argparse.ArgumentParser()
 argparser.add_argument('--save_fn', default="", required=False, type=str, help="filename to save elmo embeddings")
 argparser.add_argument('--device', default=0, required=False)
-argparser.add_argument('--data', default="20NG", required=False)
+argparser.add_argument('--data', default="fetch20", required=False)
 argparser.add_argument('--use_stopwords', default=0, type=int, required=False)
 argparser.add_argument('--use_full_vocab', default=0, type=int, required=False)
 
@@ -55,7 +55,7 @@ class ElmoWordFromTextEncoder:
         if valid_vocab is None:
             print("Provide list of vocab words.")
             sys.exit(1)
-        
+
         self.use_full_vocab = False
         self.strip_punct = str.maketrans("", "", string.punctuation)
         #self.strip_punct = str.maketrans(string.punctuation, ' '*len(string.punctuation))
@@ -138,7 +138,7 @@ class ElmoWordFromTextEncoder:
                 sents = [sent.split() for sent in sents]
                 total_len = sum([len(s) for s in sents])
 
-                if total_len==0: 
+                if total_len==0:
                     continue
 
 
@@ -176,7 +176,7 @@ def init():
     else:
         stopwords = set()
 
-    word_to_file, _, files = preprocess.get_dataset(dataset=args.data, type="train")
+    word_to_file, _, files = preprocess.create_vocab_preprocess(stopwords, dataset=args.data, preprocess = 5, type="train",  vocab = set())
 
     if args.use_full_vocab == 1:
         valid_vocab = -1
