@@ -29,15 +29,9 @@ def main():
     intersection = None
     words_index_intersect = None
 
-<<<<<<< HEAD
-    data, bword_index = read_entity_file("models/jose_300d.txt", args.id2name, train_word_to_file)
-
-    tf_idf = get_tfidf_score(files, train_word_to_file, bword_index)
-=======
 
     tf_idf = get_tfidf_score(files, train_word_to_file)
 
->>>>>>> master
 
     if args.entities == "word2vec":
         model = gensim.models.KeyedVectors.load_word2vec_format('models/GoogleNews-vectors-negative300.bin', binary=True)
@@ -46,8 +40,8 @@ def main():
         ft = fasttext.load_model('models/wiki.en.bin')
         intersection, words_index_intersect = create_entities_ft(ft, train_w_to_f_mult, args.doc_info)
         print(intersection.shape)
-    elif args.entities == "KG":
-        data, word_index = read_entity_file(args.entities_file, args.id2name, train_word_to_file)
+    elif args.entities == "KG" or args.entities == "glove":
+        data, word_index = read_entity_file( args.entities, args.entities_file, args.id2name, train_word_to_file)
         intersection, words_index_intersect = find_intersect(word_index, train_w_to_f_mult, data, files_num, args.entities, args.doc_info)
 
     if args.use_dims:
@@ -253,7 +247,7 @@ def print_top_k(top_k_bins, name, type):
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(__doc__)
-    parser.add_argument("--entities", type=str, choices=["word2vec", "fasttext", "KG"])
+    parser.add_argument("--entities", type=str, choices=["word2vec", "fasttext", "glove", "KG"])
     parser.add_argument( "--entities_file", type=str, help="entity file")
 
     parser.add_argument("--clustering_algo", type=str, required=True, choices=["KMeans", "SPKMeans", "GMM", "KMedoids","Agglo","DBSCAN","Spectral","VMFM",
