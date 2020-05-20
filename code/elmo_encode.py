@@ -25,6 +25,7 @@ argparser.add_argument('--device', default=0, required=False)
 argparser.add_argument('--data', default="fetch20", required=False)
 argparser.add_argument('--use_stopwords', default=0, type=int, required=False)
 argparser.add_argument('--use_full_vocab', default=0, type=int, required=False)
+argparser.add_argument('--mixture_coefficients', default="1;1;1", type=str, required=False, help="logits, separate by ';'")
 args = argparser.parse_args()
 
 device=torch.device("cuda:{}".format(args.device) if int(args.device)>=0 else "cpu")
@@ -55,7 +56,7 @@ class ElmoWordFromTextEncoder:
 
     def __init__(self, valid_vocab=None):
         self.sent_tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
-        self.model = Elmo(options_file, weight_file, 1, dropout=0).to(device)
+        self.model = Elmo(options_file, weight_file, 1, dropout=0, scalar_mix_parameters=[float(x) for x in args.mixture_coefficients.split(";")]).to(device)
         self.device = device
 
         self.w2vb = {} #embeds_sum
