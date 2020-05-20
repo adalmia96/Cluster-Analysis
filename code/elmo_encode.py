@@ -9,13 +9,15 @@ import math
 import os, sys
 import nltk.data
 import string
+
+# custom import
+import allennlp
+import torch
+from allennlp.modules.elmo import Elmo, batch_to_ids
+
 # argparser
 import time
 import argparse
-
-from debugger import Debugger
-DB = Debugger()
-
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument('--save_fn', default="", required=False, type=str, help="filename to save elmo embeddings")
@@ -23,10 +25,17 @@ argparser.add_argument('--device', default=0, required=False)
 argparser.add_argument('--data', default="fetch20", required=False)
 argparser.add_argument('--use_stopwords', default=0, type=int, required=False)
 argparser.add_argument('--use_full_vocab', default=0, type=int, required=False)
+args = argparser.parse_args()
 
 device=torch.device("cuda:{}".format(args.device) if int(args.device)>=0 else "cpu")
 
 print("using device:", device)
+
+
+options_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json"
+weight_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5"
+
+
 
 class ElmoWordFromTextEncoder:
 
@@ -176,7 +185,7 @@ def init():
     else:
         stopwords = set()
 
-    word_to_file, _, files = preprocess.create_vocab_and_files(stopwords, dataset=args.data, preprocess = 5, type="train",  vocab = set())
+    word_to_file, _, files = preprocess.create_vocab_and_files(stopwords, dataset=args.data, preprocess = 5, type="train", vocab = set())
 
     if args.use_full_vocab == 1:
         valid_vocab = -1

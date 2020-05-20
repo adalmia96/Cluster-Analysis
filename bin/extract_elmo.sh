@@ -18,7 +18,8 @@ use_full_vocab=1
 use_sw=0
 
 #for DATA in 20NG cb reuters; do
-for DATA in 20NG; do
+#for DATA in fetch20 children reuters; do
+for DATA in fetch20; do
 
   SAVEFN=$SAVEDIR/${DATA}-elmo.full_vocab.punc_respace
   python code/elmo_encode.py --device $CUDA --data $DATA --save_fn $SAVEFN --use_stopwords $use_sw --use_full_vocab $use_full_vocab
