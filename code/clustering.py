@@ -9,7 +9,7 @@ import pdb
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 
-#from spherecluster import SphericalKMeans
+from spherecluster import SphericalKMeans
 from spherecluster import VonMisesFisherMixture
 
 from sklearn.metrics.pairwise import rbf_kernel
@@ -92,7 +92,9 @@ def KMeans_model(vocab_embeddings, vocab, topics, rerank, rand, weights):
         #print(indices)
     return m_clusters, indices
 
+
 def SphericalKMeans_model(vocab_embeddings,vocab,topics, rerank, rand, weights):
+
     spkmeans = SphericalKMeans(n_clusters=topics, random_state=rand).fit(vocab_embeddings, sample_weight=weights)
     m_clusters = spkmeans.predict(vocab_embeddings,  sample_weight=weights)
     centers = np.array(spkmeans.cluster_centers_)
