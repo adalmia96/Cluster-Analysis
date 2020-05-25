@@ -36,7 +36,7 @@ def main():
         model = gensim.models.KeyedVectors.load_word2vec_format('models/GoogleNews-vectors-negative300.bin', binary=True)
         intersection, words_index_intersect  = find_intersect(model.vocab,  train_w_to_f_mult, model, files_num, args.entities, args.doc_info)
     elif args.entities == "fasttext":
-        
+
         # for compatibility, but move everything to embeds later.
         if os.path.exists('models/wiki.en.bin'):
             ftfn = 'models/wiki.en.bin'
@@ -46,9 +46,9 @@ def main():
         ft = fasttext.load_model(ftfn)
         intersection, words_index_intersect = create_entities_ft(ft, train_w_to_f_mult, args.doc_info)
         print(intersection.shape)
-    elif args.entities == "KG":
+    elif args.entities == "KG" or args.entities == "glove" :
         elmomix = [float(a) for a in args.elmomix.split(";")] if args.elmomix != "" else None
-        data, word_index = read_entity_file(args.entities_file, args.id2name, train_word_to_file, elmomix=elmomix)
+        data, word_index = read_entity_file(args.entities_file, args.id2name, train_word_to_file, args.entities, elmomix=elmomix)
         intersection, words_index_intersect = find_intersect(word_index, train_w_to_f_mult, data, files_num, args.entities, args.doc_info)
 
     if args.use_dims:
@@ -107,6 +107,13 @@ def main():
 
             top_k_words = rerank(args.rerank, top_k_words, top_k, train_w_to_f_mult, train_word_to_file, tf_idf, tfdf)
             val = npmi.average_npmi_topics(top_k_words, len(top_k_words), dev_word_to_file, dev_files_num)
+
+            if np.isnan(val):
+                global NSEEDS
+                NSEEDS +=1
+                rand += 1
+                continue
+
             npmi_score = np.around(val, 5)
             print("NPMI:" + str(npmi_score))
             npmis.append(npmi_score)
@@ -120,39 +127,39 @@ def main():
     best_topic = args.num_topics[np.argmax(topics_npmi)]
 
 
-    npmis = []
-    print("Number of Clusters:" + str(best_topic))
-    rand = 0
-    while rand < NSEEDS:
-        top_k_words, top_k = cluster(args.clustering_algo, intersection, words_index_intersect, best_topic, args.rerank, weights, args.topics_file, rand)
-
-        # if args.doc_info == "WGT":
-        #     redo = False;
-        #     for c in top_k:
-        #         if len(c) < 10:
-        #             weights[c] = weights[c] -  0.1*weights[c]
-        #             if weights[c][0] < 1e-16:
-        #                 weights[c] = 0*weights[c]
-        #                 # print(weights[c])
-        #             redo = True
-        #
-        #     if redo:
-        #         print("Retry Cluster")
-        #         continue
-        #     else:
-        #         weights = get_rs_weights_tf(words_index_intersect, train_w_to_f_mult)
-
-
-        top_k_words = rerank(args.rerank, top_k_words, top_k, train_w_to_f_mult, train_word_to_file, tf_idf, tfdf)
-        val = npmi.average_npmi_topics(top_k_words, len(top_k_words), test_word_to_file,
-                test_files_num)
-
-        npmi_score = np.around(val, 5)
-        print("NPMI:" + str(npmi_score))
-        npmis.append(npmi_score)
-        rand += 1
-    print("NPMI Mean:" + str(np.around(np.mean(npmis), 5)))
-    print("NPMI Var:" + str(np.around(np.var(npmis), 5)))
+    # npmis = []
+    # print("Number of Clusters:" + str(best_topic))
+    # rand = 0
+    # while rand < NSEEDS:
+    #     top_k_words, top_k = cluster(args.clustering_algo, intersection, words_index_intersect, best_topic, args.rerank, weights, args.topics_file, rand)
+    #
+    #     # if args.doc_info == "WGT":
+    #     #     redo = False;
+    #     #     for c in top_k:
+    #     #         if len(c) < 10:
+    #     #             weights[c] = weights[c] -  0.1*weights[c]
+    #     #             if weights[c][0] < 1e-16:
+    #     #                 weights[c] = 0*weights[c]
+    #     #                 # print(weights[c])
+    #     #             redo = True
+    #     #
+    #     #     if redo:
+    #     #         print("Retry Cluster")
+    #     #         continue
+    #     #     else:
+    #     #         weights = get_rs_weights_tf(words_index_intersect, train_w_to_f_mult)
+    #
+    #
+    #     top_k_words = rerank(args.rerank, top_k_words, top_k, train_w_to_f_mult, train_word_to_file, tf_idf, tfdf)
+    #     val = npmi.average_npmi_topics(top_k_words, len(top_k_words), test_word_to_file,
+    #             test_files_num)
+    #
+    #     npmi_score = np.around(val, 5)
+    #     print("NPMI:" + str(npmi_score))
+    #     npmis.append(npmi_score)
+    #     rand += 1
+    # print("NPMI Mean:" + str(np.around(np.mean(npmis), 5)))
+    # print("NPMI Var:" + str(np.around(np.var(npmis), 5)))
 
 
 
@@ -254,7 +261,7 @@ def print_top_k(top_k_bins, name, type):
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(__doc__)
-    parser.add_argument("--entities", type=str, choices=["word2vec", "fasttext", "KG"])
+    parser.add_argument("--entities", type=str, choices=["word2vec", "fasttext", "glove", "KG"])
     parser.add_argument( "--entities_file", type=str, help="entity file")
     parser.add_argument( "--elmomix", type=str, default="", help="elmomix coefficients, separated by ';', should sum to 1")
 

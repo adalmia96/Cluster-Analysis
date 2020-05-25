@@ -122,7 +122,7 @@ def create_vocab_preprocess(stopwords, data, vocab, preprocess, process_data=Fal
         proc_file = []
 
         for word in words:
-            if word in stopwords or (word not in vocab and len(vocab)):
+            if word in stopwords or (word not in vocab and len(vocab)) or word =="dlrs" or word == "revs":
                 continue
             if word in word_to_file:
                 word_to_file[word].add(file_num)

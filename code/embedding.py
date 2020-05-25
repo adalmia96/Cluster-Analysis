@@ -17,7 +17,7 @@ def create_id_dict(id2name):
         data[mapping[0]] = mapping[1]
     return data
 
-def read_entity_file(file, id_to_word, vocab, elmomix=None):
+def read_entity_file(file, id_to_word, vocab, entities, elmomix=None):
     data = []
     word_index = {}
     index = 0
@@ -33,8 +33,10 @@ def read_entity_file(file, id_to_word, vocab, elmomix=None):
             if embedding[0] in vocab:
                 word_index[embedding[0]] = index
                 index +=1
-                embedding = list(map(float, embedding[1:]))
-                #  embedding = list(map(float, embedding[-300:]))
+                if entities == "glove":
+                    embedding = list(map(float, embedding[-300:]))
+                else:
+                    embedding = list(map(float, embedding[1:]))
                 data.append(embedding)
     else:  # specify mixing coefficients for ELMo
         assert file[-1] in "012" and file[-7:-1] == ".layer"
