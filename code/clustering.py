@@ -10,7 +10,7 @@ from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 
 #from spherecluster import SphericalKMeans
-#from spherecluster import VonMisesFisherMixture
+from spherecluster import VonMisesFisherMixture
 
 from sklearn.metrics.pairwise import rbf_kernel
 
@@ -121,7 +121,7 @@ def GMM_model(vocab_embeddings, vocab,  topics, rerank, rand):
 
     return GMM.predict(vocab_embeddings), indices
 
-def VonMisesFisherMixture_Model(vocab_embeddings, topics, rand):
+def VonMisesFisherMixture_Model(vocab_embeddings, vocab, topics, rerank, rand):
     #vmf_soft = VonMisesFisherMixture(n_clusters=topics, posterior_type='hard', n_jobs=-1, random_state=rand).fit(vocab_embeddings)
     print("fitting vmf...")
     vmf_soft = VonMisesFisherMixture(n_clusters=topics, posterior_type='soft', n_jobs=-1, random_state=rand).fit(vocab_embeddings)
@@ -130,10 +130,12 @@ def VonMisesFisherMixture_Model(vocab_embeddings, topics, rand):
     indices = []
     for i in range(topics):
 
-        topk_vals = llh[i, :].argsort()[::-1][:10]
-        indices.append(list(topk_vals))
+        topk_vals = llh[i, :].argsort()[::-1].astype(int)
+        if rerank:
+            indices.append(find_top_k_words(100, topk_vals, vocab))
+        else:
+            indices.append(find_top_k_words(10, topk_vals, vocab))
 
-    print(indices)
     return vmf_soft.predict(vocab_embeddings), indices
 
 def sort_closest_center(center_vec, m_clusters,vocab_embeddings, c_ind):
