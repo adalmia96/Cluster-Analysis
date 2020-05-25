@@ -17,7 +17,7 @@ def create_id_dict(id2name):
         data[mapping[0]] = mapping[1]
     return data
 
-def read_entity_file(file, id_to_word, vocab):
+def read_entity_file(file, id_to_word, vocab, elmomix=None):
     data = []
     word_index = {}
     index = 0
@@ -25,16 +25,35 @@ def read_entity_file(file, id_to_word, vocab):
     if id_to_word != None:
         mapping = create_id_dict(id_to_word)
 
-    for line in open(file):
-        embedding = line.split()
-        if id_to_word != None:
-            embedding[0] = mapping[embedding[0]][1:]
-        if embedding[0] in vocab:
-            word_index[embedding[0]] = index
-            index +=1
-            #embedding = list(map(float, embedding[1:]))
-            embedding = list(map(float, embedding[-300:]))
-            data.append(embedding)
+    if elmomix is None:
+        for line in open(file):
+            embedding = line.split()
+            if id_to_word != None:
+                embedding[0] = mapping[embedding[0]][1:]
+            if embedding[0] in vocab:
+                word_index[embedding[0]] = index
+                index +=1
+                embedding = list(map(float, embedding[1:]))
+                #  embedding = list(map(float, embedding[-300:]))
+                data.append(embedding)
+    else:  # specify mixing coefficients for ELMo
+        assert file[-1] in "012" and file[-7:-1] == ".layer"
+        with open(file[:-1] + "0") as f0, open(file[:-1] + "0") as f0, open(file[:-1] + "1") as f1, open(file[:-1] + "2") as f2:
+            for l0, l1, l2 in zip(f0, f1, f2):
+                e0 = l0.split()
+                e1 = l1.split()
+                e2 = l2.split()
+                assert e0[0] == e1[0] and e1[0] == e2[0]
+                assert len(e0) == len(e1) and len(e1) == len(e2)
+                if id_to_word != None:
+                    e0[0] = mapping[e0[0]][1:]
+                    e1[0] = mapping[e1[0]][1:]
+                    e2[0] = mapping[e2[0]][1:]
+                if e0[0] in vocab:
+                    word_index[e0[0]] = index
+                    index +=1
+                    embedding = [elmomix[0] * float(x0) + elmomix[1] * float(x1) + elmomix[2] * float(x2) for x0, x1, x2 in zip(e0[1:], e1[1:], e2[1:])]
+                    data.append(embedding)
 
     print("KG: " + str(len(data)))
     return data, word_index
