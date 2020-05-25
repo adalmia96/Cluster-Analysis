@@ -11,18 +11,21 @@ export PYTHONIOENCODING=utf-8
 
 source activate sphericalkmeans
 
-EMBEDS=$1
-emb=$2
-ALGO=$3
-weighted=$4
-rr=$5
+DS=$1
+EMBEDS=$2
+emb=$3
+ALGO=$4
+weighted=$5
+rr=$6
 
-WRITEF="results/reuters/$emb-$ALGO"
+mkdir -p results/$DS
 
-PY="python3 code/score.py --entities KG --entities_file $EMBEDS/$emb --clustering_algo $ALGO --dataset reuters --vocab $EMBEDS/reuters-bert-layer12-average.full_vocab.fix --num_topics 20"
+WRITEF="results/$DS/$emb-$ALGO"
+
+PY="python3 code/score.py --entities KG --entities_file $EMBEDS/$emb --clustering_algo $ALGO --dataset $DS --vocab $EMBEDS/$DS-bert-layer12-average.full_vocab.fix --num_topics 20"
 
 if [ "$emb" == "fasttext" ] || [ "$emb" == "word2vec" ]; then
-  PY="python3 code/score.py --entities $emb --clustering_algo $ALGO --dataset reuters --vocab $EMBEDS/reuters-bert-layer12-average.full_vocab.fix --num_topics 20"
+  PY="python3 code/score.py --entities $emb --clustering_algo $ALGO --dataset $DS --vocab $EMBEDS/$DS-bert-layer12-average.full_vocab.fix --num_topics 20"
 fi
 
 if [[ $weighted -eq 1 ]]; then

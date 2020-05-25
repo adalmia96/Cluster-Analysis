@@ -270,7 +270,7 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument('--id2name', type=Path, help="id2name file")
 
-    parser.add_argument("--dataset", type=str, default ="fetch20", choices=["fetch20", "children", "reuters"])
+    parser.add_argument("--dataset", type=str, default ="20NG", choices=["20NG", "children", "reuters"])
     parser.add_argument("--preprocess", type=int, default=5)
     parser.add_argument("--vocab", required=True,  type=str, nargs='+', default=[])
 

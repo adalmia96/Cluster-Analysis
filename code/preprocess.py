@@ -162,7 +162,7 @@ def create_vocab_preprocess(stopwords, data, vocab, preprocess, process_data=Fal
 
 def create_vocab_and_files(stopwords, dataset, preprocess, type, vocab):
     data = None
-    if dataset == "fetch20":
+    if dataset == "20NG":
         data = create_files_20news(type)
     elif dataset == "children":
         data = create_files_children(type)

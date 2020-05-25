@@ -22,7 +22,7 @@ import argparse
 argparser = argparse.ArgumentParser()
 argparser.add_argument('--save_fn', default="", required=False, type=str, help="filename to save elmo embeddings")
 argparser.add_argument('--device', default=0, required=False)
-argparser.add_argument('--data', default="fetch20", required=False)
+argparser.add_argument('--data', default="20NG", required=False)
 argparser.add_argument('--use_stopwords', default=0, type=int, required=False)
 argparser.add_argument('--use_full_vocab', default=0, type=int, required=False)
 argparser.add_argument('--mixture_coefficients', default="1;1;1", type=str, required=False, help="logits, separate by ';'")
