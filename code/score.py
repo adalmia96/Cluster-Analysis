@@ -10,6 +10,7 @@ import string
 from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
+import gensim
 import pdb
 import math
 
@@ -35,7 +36,14 @@ def main():
         model = gensim.models.KeyedVectors.load_word2vec_format('models/GoogleNews-vectors-negative300.bin', binary=True)
         intersection, words_index_intersect  = find_intersect(model.vocab,  train_w_to_f_mult, model, files_num, args.entities, args.doc_info)
     elif args.entities == "fasttext":
-        ft = fasttext.load_model('models/wiki.en.bin')
+        
+        # for compatibility, but move everything to embeds later.
+        if os.path.exists('models/wiki.en.bin'):
+            ftfn = 'models/wiki.en.bin'
+        else:
+            ftfn = 'embeds/wiki.en.bin'
+
+        ft = fasttext.load_model(ftfn)
         intersection, words_index_intersect = create_entities_ft(ft, train_w_to_f_mult, args.doc_info)
         print(intersection.shape)
     elif args.entities == "KG":
@@ -106,8 +114,8 @@ def main():
             rand += 1
 
         topics_npmi.append(np.mean(npmis))
-        print("NPMI Mean:" + str(topics_npmi[-1]))
-        print("NPMI Var:" + str(np.var(npmis)))
+        print("NPMI Mean:" + str(np.around(topics_npmi[-1], 5)))
+        print("NPMI Var:" + str(np.around(np.var(npmis), 5)))
 
     best_topic = args.num_topics[np.argmax(topics_npmi)]
 
@@ -143,8 +151,8 @@ def main():
         print("NPMI:" + str(npmi_score))
         npmis.append(npmi_score)
         rand += 1
-    print("NPMI Mean:" + str(np.mean(npmis)))
-    print("NPMI Var:" + str(np.var(npmis)))
+    print("NPMI Mean:" + str(np.around(np.mean(npmis), 5)))
+    print("NPMI Var:" + str(np.around(np.var(npmis), 5)))
 
 
 
