@@ -82,7 +82,7 @@ def main():
 
         print("Number of Clusters:" + str(topics))
         rand = 0
-
+        global NSEEDS
         while rand < NSEEDS:
 
             top_k_words, top_k = cluster(args.clustering_algo, intersection, words_index_intersect, topics, args.rerank, weights, args.topics_file, rand)
@@ -109,7 +109,7 @@ def main():
             val = npmi.average_npmi_topics(top_k_words, len(top_k_words), dev_word_to_file, dev_files_num)
 
             if np.isnan(val):
-                global NSEEDS
+
                 NSEEDS +=1
                 rand += 1
                 continue
