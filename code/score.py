@@ -57,9 +57,26 @@ def main():
     #weights , tfdf = get_weights_tfdf(words_index_intersect, train_w_to_f_mult, files_num)
     weights = None
     tfdf = None
+    
 
     if args.doc_info == "WGT":
         weights = get_weights_tf(words_index_intersect, train_w_to_f_mult)
+
+    if args.doc_info == "robust":
+        weights = get_rs_weights_tf(words_index_intersect, train_w_to_f_mult)
+
+    if args.doc_info == "tfdf":
+        weights , tfdf = get_weights_tfdf(words_index_intersect, train_w_to_f_mult, files_num)
+
+    if weights is not None and args.scale == "sigmoid":
+        print("scaling.. sigmoid")
+        weights = 1 / (1 + np.exp(weights))
+
+
+    elif weights is not None and args.scale == "log":
+        print("scaling.. log")
+        weights = np.log(weights)
+
 
 
 
@@ -272,14 +289,16 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument('--use_dims', type=int)
     parser.add_argument('--num_topics',  nargs='+', type=int, default=[20])
-    parser.add_argument("--doc_info", type=str, choices=["SVD", "DUP", "WGT"])
-    parser.add_argument("--rerank", type=str, choices=["tf", "tfidf", "tfdf", "graph"])
+    parser.add_argument("--doc_info", type=str, choices=["SVD", "DUP", "WGT", "robust", \
+    "logtfdf"])
+    parser.add_argument("--rerank", type=str, choices=["tf", "tfidf", "tfdf", "graph"]) \
 
     parser.add_argument('--id2name', type=Path, help="id2name file")
 
     parser.add_argument("--dataset", type=str, default ="20NG", choices=["20NG", "children", "reuters"])
     parser.add_argument("--preprocess", type=int, default=5)
     parser.add_argument("--vocab", required=True,  type=str, nargs='+', default=[])
+    parser.add_argument("--scale", type=str, required=False)
 
 
     args = parser.parse_args()

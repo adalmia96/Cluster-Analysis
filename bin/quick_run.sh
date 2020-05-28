@@ -17,15 +17,27 @@ emb=$3
 ALGO=$4
 weighted=$5
 rr=$6
+#scale=$7
 
-mkdir -p results/$DS
+mkdir -p results/${DS}_nofix
 
-WRITEF="results/$DS/$emb-$ALGO"
+WRITEF="results/${DS}_nofix/$emb-$ALGO"
 
-PY="python3 code/score.py --entities KG --entities_file $EMBEDS/$emb --clustering_algo $ALGO --dataset $DS --vocab $EMBEDS/$DS-bert-layer12-average.full_vocab.fix --num_topics 20"
+PY="python3 code/score.py --clustering_algo $ALGO --dataset $DS --vocab $EMBEDS/${DS}-bert-layer12-average.full_vocab --num_topics 20"
 
-if [ "$emb" == "fasttext" ] || [ "$emb" == "word2vec" ]; then
-  PY="python3 code/score.py --entities $emb --clustering_algo $ALGO --dataset $DS --vocab $EMBEDS/$DS-bert-layer12-average.full_vocab.fix --num_topics 20"
+# glove needs both --entities and --entities_file flag
+# fasttext and word2vec only take --entities flag
+# the rest take --entities KG and --entities_file flag
+
+if [ "$emb" == "glove" ]; then
+  PY+=" --entities glove --entities_file $EMBEDS/glove.840B.300d.txt"
+
+elif [ "$emb" == "fasttext" ] || [ "$emb" == "word2vec" ]; then
+  PY+=" --entities $emb"
+
+else
+  PY+=" --entities KG --entities_file $EMBEDS/$emb"
+
 fi
 
 if [[ $weighted -eq 1 ]]; then
@@ -38,7 +50,9 @@ if [[ $rr -eq 1 ]]; then
   WRITEF+="-rr"
 fi
 
+
 WRITEF+=".txt"
 
 printf "$PY > $WRITEF\n\n"
 eval "$PY > $WRITEF"
+#eval "$PY"
