@@ -125,7 +125,7 @@ def create_entities_ft(model, train_word_to_file, doc_info):
     words = []
     intersection = set(train_word_to_file.keys())
     for word in intersection:
-        if doc_info:
+        if doc_info == "DUP":
             for i in train_word_to_file[word]:
                 vocab_embeddings.append(model.get_word_vector(word))
                 words.append(word)
