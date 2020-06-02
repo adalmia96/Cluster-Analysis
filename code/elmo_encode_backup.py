@@ -12,7 +12,7 @@ import numpy as np
 def init():
     tf.compat.v1.disable_eager_execution()
     elmo = hub.Module("https://tfhub.dev/google/elmo/2", trainable=False)
-    x = ["hello my name is ayush dalmia what is yours", "Roasted ants are a popular snack in Columbia"]
+    x = ["hello my name is xx what is yours", "Roasted ants are a popular snack in Columbia"]
     # Extract ELMo features
     embeddings = elmo(x, signature="default", as_dict=True)["elmo"]
 
