@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-# Author: Suzanna Sia
 
 # Standard imports
 import random

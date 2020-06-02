@@ -1,6 +1,4 @@
 #!/usr/bin/python3
-# Author: Suzanna Sia
-# Credits: Ayush Dalmia
 
 # Standard imports
 #import random

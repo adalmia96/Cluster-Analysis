@@ -1,5 +1,4 @@
 ##!/usr/bin/env bash
-# Author: Suzanna Sia
  
 EMBEDS=/export/c12/ssia/shared/Cluster-Analysis/embeds
 DS=20NG

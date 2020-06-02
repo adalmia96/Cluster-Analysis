@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-# Author: Suzanna Sia
 
 # Standard imports
 #import random

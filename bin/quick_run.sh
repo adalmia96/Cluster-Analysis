@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Author: Suzanna Sia
 
 #$ -l 'hostname=b1[12345678]*|c*,mem_free=5G,ram_free=5G'
 #$ -cwd

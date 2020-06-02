@@ -13,6 +13,7 @@ import numpy as np
 import gensim
 import pdb
 import math
+import random
 
 NSEEDS = 5
 
@@ -102,7 +103,13 @@ def main():
         global NSEEDS
         while rand < NSEEDS:
 
-            top_k_words, top_k = cluster(args.clustering_algo, intersection, words_index_intersect, topics, args.rerank, weights, args.topics_file, rand)
+            try:
+                top_k_words, top_k = cluster(args.clustering_algo, intersection, words_index_intersect, topics, args.rerank, weights, args.topics_file, rand)
+            except:
+                print("Warning: failed, try diff random seed.")
+                new_rand = random.randint(5,1000)
+                top_k_words, top_k = cluster(args.clustering_algo, intersection, \
+                        words_index_intersect, topics, args.rerank, weights, args.topics_file, new_rand)
 
             # if args.doc_info == "WGT":
             #     redo = False;
