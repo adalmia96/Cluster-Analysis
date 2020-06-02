@@ -19,9 +19,10 @@ use_sw=0
 
 #for DATA in 20NG cb reuters; do
 #for DATA in fetch20 children reuters; do
-for DATA in fetch20; do
+for DATA in reuters; do
 
-  SAVEFN=$SAVEDIR/${DATA}-elmo.full_vocab.punc_respace
-  python code/elmo_encode.py --device $CUDA --data $DATA --save_fn $SAVEFN --use_stopwords $use_sw --use_full_vocab $use_full_vocab
+  SAVEFN=$SAVEDIR/${DATA}-elmo.full_vocab.layer2
+  python code/elmo_encode.py --device $CUDA --data $DATA --save_fn $SAVEFN --use_stopwords \
+  $use_sw --use_full_vocab $use_full_vocab --mixture_coefficient "0;0;1"
 
 done

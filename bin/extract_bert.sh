@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Author: Suzanna Sia
 
 CUDA=`free-gpu`
 export CUDA_VISIBLE_DEVICES=$CUDA
