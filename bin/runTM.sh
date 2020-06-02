@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
-#Author: Suzanna Sia
 
-TrainTextDir=/export/c12/ssia/shared/Cluster-Analysis/data/for_lda
-MALLETDIR=/home/ssia/packages/Mallet
+TrainTextDir=path-to/Cluster-Analysis/data/for_lda
+MALLETDIR=path-to/packages/Mallet
 
 # Modify This
-SAVEDIR=/home/ssia/projects/Cluster-Analysis/mallet_temp
+SAVEDIR=path-to/projects/Cluster-Analysis/mallet_temp
 NTOPICS=20
 
 mkdir -p $SAVEDIR/

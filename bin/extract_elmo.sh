@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-#Author: Suzanna Sia
 #$ -l 'hostname=c*,mem_free=10G,ram_free=10G,gpu=1'
 #$ -cwd
 #$ -q g.q
@@ -12,7 +11,7 @@ source activate allennlp
 CUDA=`free-gpu`
 export CUDA_VISIBLE_DEVICES=$CUDA
 CUDA=0
-SAVEDIR=/export/c12/ssia/shared/Cluster-Analysis/embeds
+SAVEDIR=path-to/Cluster-Analysis/embeds
 DATA=20NG # 20NG or cb
 use_full_vocab=1
 use_sw=0

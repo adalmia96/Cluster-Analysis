@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-#Author: Suzanna Sia
-#EMBED_DIR=/export/c12/ssia/shared/Cluster-Analysis/embeds
+#EMBED_DIR=path-to/Cluster-Analysis/embeds
 EMBED_DIR=embeds
 algo=KMeans
 

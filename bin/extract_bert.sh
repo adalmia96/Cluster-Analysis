@@ -4,7 +4,7 @@ CUDA=`free-gpu`
 export CUDA_VISIBLE_DEVICES=$CUDA
 CUDA=0
 
-SAVEDIR=/export/c12/ssia/shared/Cluster-Analysis/embeds
+SAVEDIR=path-to/Cluster-Analysis/embeds
 
 DATA=cb
 layer=12

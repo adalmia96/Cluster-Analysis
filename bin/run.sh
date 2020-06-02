@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-#Author: Suzanna Sia
 for Algo in KMeans GMM
   do
   for dim in 150 #10 50 100 200 300

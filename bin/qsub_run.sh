@@ -1,6 +1,6 @@
 ##!/usr/bin/env bash
  
-EMBEDS=/export/c12/ssia/shared/Cluster-Analysis/embeds
+EMBEDS=path-to/Cluster-Analysis/embeds
 DS=20NG
 
 mkdir -p results/$DS

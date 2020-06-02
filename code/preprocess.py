@@ -7,7 +7,7 @@ import string
 import numpy as np
 
 import os
-DATADIR="/export/c12/ssia/shared/Cluster-Analysis/data"
+DATADIR="path-to/Cluster-Analysis/data"
 
 def create_global_vocab(vocab_files):
     vocab_list = set(line.split()[0] for line in open(vocab_files[0]))
