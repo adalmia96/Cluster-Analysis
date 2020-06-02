@@ -1,6 +1,7 @@
 
 #### Example usage
-`python score.py --entities fasttext --clustering_algo KMeans`
+`python score.py --entities fasttext --clustering_algo KMeans --dataset reuters --doc_info WGT--rerank tf
+
 
 #### Spherical KMeans Dependencies
 https://github.com/jasonlaska/spherecluster/issues/26
