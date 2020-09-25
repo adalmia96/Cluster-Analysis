@@ -58,7 +58,7 @@ def main():
     #weights , tfdf = get_weights_tfdf(words_index_intersect, train_w_to_f_mult, files_num)
     weights = None
     tfdf = None
-    
+
 
     if args.doc_info == "WGT":
         weights = get_weights_tf(words_index_intersect, train_w_to_f_mult)
@@ -93,7 +93,6 @@ def main():
 
 
     topics_npmi = []
-    #pmi_mat = calc_pmi_matrix(words_index_intersect, train_word_to_file, files_num)
 
     for topics in args.num_topics:
         npmis = []
@@ -111,29 +110,12 @@ def main():
                 top_k_words, top_k = cluster(args.clustering_algo, intersection, \
                         words_index_intersect, topics, args.rerank, weights, args.topics_file, new_rand)
 
-            # if args.doc_info == "WGT":
-            #     redo = False;
-            #     for c in top_k:
-            #         if len(c) < 10:
-            #             weights[c] = weights[c] -  0.1*weights[c]
-            #             if weights[c][0] < 1e-16:
-            #                 weights[c] = 0*weights[c]
-            #            # print(weights[c])
-            #             redo = True
-            #
-            #     if redo:
-            #         print("Retry Cluster")
-            #         continue
-            #     else:
-            #         weights = get_rs_weights_tf(words_index_intersect, train_w_to_f_mult)
-
 
 
             top_k_words = rerank(args.rerank, top_k_words, top_k, train_w_to_f_mult, train_word_to_file, tf_idf, tfdf)
             val = npmi.average_npmi_topics(top_k_words, len(top_k_words), dev_word_to_file, dev_files_num)
 
             if np.isnan(val):
-
                 NSEEDS +=1
                 rand += 1
                 continue
@@ -150,40 +132,6 @@ def main():
 
     best_topic = args.num_topics[np.argmax(topics_npmi)]
 
-
-    # npmis = []
-    # print("Number of Clusters:" + str(best_topic))
-    # rand = 0
-    # while rand < NSEEDS:
-    #     top_k_words, top_k = cluster(args.clustering_algo, intersection, words_index_intersect, best_topic, args.rerank, weights, args.topics_file, rand)
-    #
-    #     # if args.doc_info == "WGT":
-    #     #     redo = False;
-    #     #     for c in top_k:
-    #     #         if len(c) < 10:
-    #     #             weights[c] = weights[c] -  0.1*weights[c]
-    #     #             if weights[c][0] < 1e-16:
-    #     #                 weights[c] = 0*weights[c]
-    #     #                 # print(weights[c])
-    #     #             redo = True
-    #     #
-    #     #     if redo:
-    #     #         print("Retry Cluster")
-    #     #         continue
-    #     #     else:
-    #     #         weights = get_rs_weights_tf(words_index_intersect, train_w_to_f_mult)
-    #
-    #
-    #     top_k_words = rerank(args.rerank, top_k_words, top_k, train_w_to_f_mult, train_word_to_file, tf_idf, tfdf)
-    #     val = npmi.average_npmi_topics(top_k_words, len(top_k_words), test_word_to_file,
-    #             test_files_num)
-    #
-    #     npmi_score = np.around(val, 5)
-    #     print("NPMI:" + str(npmi_score))
-    #     npmis.append(npmi_score)
-    #     rand += 1
-    # print("NPMI Mean:" + str(np.around(np.mean(npmis), 5)))
-    # print("NPMI Var:" + str(np.around(np.var(npmis), 5)))
 
 
 
@@ -233,8 +181,10 @@ def rerank(rerank, top_k_words, top_k, train_w_to_f_mult, train_w_to_f, tf_idf, 
         #top_k_words =  rank_freq(top_k_words, train_w_to_f)
     elif rerank=="tfidf":
         top_k_words = rank_td_idf(top_k_words, tf_idf)
+
     elif rerank=="tfdf":
         top_k_words = rank_td_idf(top_k_words, tfdf)
+
     elif rerank=="graph":
         #doc_matrix = npmi.calc_coo_matrix(words_index_intersect, train_word_to_file)
         top_k_words = rank_centrality(top_k_words, top_k, train_w_to_f)
@@ -303,7 +253,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--id2name', type=Path, help="id2name file")
 
     parser.add_argument("--dataset", type=str, default ="20NG", choices=["20NG", "children", "reuters"])
+
     parser.add_argument("--preprocess", type=int, default=5)
+    
     parser.add_argument("--vocab", required=True,  type=str, nargs='+', default=[])
     parser.add_argument("--scale", type=str, required=False)
 
