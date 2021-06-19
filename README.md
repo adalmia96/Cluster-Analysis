@@ -1,5 +1,7 @@
 # Tired of Topic Models? Clusters of Pretrained Word Embeddings Make for Fast and Good Topics too!
-The repo contains the source code for the paper: link here
+The repo contains the source code for the [paper](https://www.aclweb.org/anthology/2020.emnlp-main.135.pdf):
+
+Sia, S., Dalmia, A., & Mielke, S. J. (2020). Tired of Topic Models? Clusters of Pretrained Word Embeddings Make for Fast and Good Topics too! Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP), 1728–1736. https://doi.org/10.18653/v1/2020.emnlp-main.135
 
 ## How to use the code
 To cluster the word embeddings to discover the latent topics, run the code/score.py file.
@@ -37,3 +39,21 @@ choices=tf, tfidf, tfdf
 
 Example call:
 `python3 code/score.py --entities KG --entities_file {dest_to_entities_file} --clustering_algo GMM --dataset reuters --vocab {dest_to_vocab_file} --num_topics 20 50 --doc_info WGT--rerank tf`
+
+## How to cite
+``` bibtex
+@inproceedings{sia-etal-2020-tired,
+    title = "Tired of Topic Models? Clusters of Pretrained Word Embeddings Make for Fast and Good Topics too!",
+    author = "Sia, Suzanna  and
+      Dalmia, Ayush  and
+      Mielke, Sabrina J.",
+    booktitle = "Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)",
+    month = nov,
+    year = "2020",
+    address = "Online",
+    publisher = "Association for Computational Linguistics",
+    url = "https://www.aclweb.org/anthology/2020.emnlp-main.135",
+    doi = "10.18653/v1/2020.emnlp-main.135",
+    pages = "1728--1736",
+}
+```
