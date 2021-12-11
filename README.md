@@ -1,4 +1,6 @@
-# Tired of Topic Models? Clusters of Pretrained Word Embeddings Make for Fast and Good Topics too!
+Tired of Topic Models? Clusters of Pretrained Word Embeddings Make for Fast and Good Topics too! (2020; Code for paper)
+==============================
+
 The repo contains the source code for the paper: https://aclanthology.org/2020.emnlp-main.135.pdf 
 
 ## How to use the code
