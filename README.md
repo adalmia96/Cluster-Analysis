@@ -1,5 +1,5 @@
 # Tired of Topic Models? Clusters of Pretrained Word Embeddings Make for Fast and Good Topics too!
-The repo contains the source code for the paper: link here
+The repo contains the source code for the paper: https://aclanthology.org/2020.emnlp-main.135.pdf 
 
 ## How to use the code
 To cluster the word embeddings to discover the latent topics, run the code/score.py file.
