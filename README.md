@@ -1,7 +1,10 @@
-# Tired of Topic Models? Clusters of Pretrained Word Embeddings Make for Fast and Good Topics too!
-The repo contains the source code for the [paper](https://www.aclweb.org/anthology/2020.emnlp-main.135.pdf):
+Tired of Topic Models? Clusters of Pretrained Word Embeddings Make for Fast and Good Topics too! (2020; Code for paper)
+==============================
+
+The repo contains the code needed to reproduce the results in [Tired of Topic Models? Clusters of Pretrained Word Embeddings Make for Fast and Good Topics too!]( https://aclanthology.org/2020.emnlp-main.135.pdf) by Sia, Dalmia, and Mieke (2020)
 
 Sia, S., Dalmia, A., & Mielke, S. J. (2020). Tired of Topic Models? Clusters of Pretrained Word Embeddings Make for Fast and Good Topics too! Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP), 1728–1736. https://doi.org/10.18653/v1/2020.emnlp-main.135
+
 
 ## How to use the code
 To cluster the word embeddings to discover the latent topics, run the code/score.py file.
